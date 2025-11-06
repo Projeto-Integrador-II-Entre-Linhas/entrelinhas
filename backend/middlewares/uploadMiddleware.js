@@ -32,7 +32,7 @@ const fileFilter = (req, file, cb) => {
   ];
 
   if (!allowed.includes(file.mimetype)) {
-    console.error('❌ Tipo de arquivo rejeitado:', file.mimetype);
+    console.error('Tipo de arquivo rejeitado:', file.mimetype);
     return cb(new Error('Tipo de arquivo não permitido. Envie uma imagem válida (.jpg, .png, .webp, etc.)'));
   }
 

@@ -55,7 +55,7 @@ export const addLivroByISBN = async (req, res) => {
   const { isbn } = req.body;
 
   try {
-    console.log(`🔎 Buscando ISBN ${isbn} na API do Google Books...`);
+    console.log(`Buscando ISBN ${isbn} na API do Google Books...`);
     const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`);
     const data = await response.json();
 
@@ -79,10 +79,10 @@ export const addLivroByISBN = async (req, res) => {
       [titulo, autor, descricao, capa, editora, ano, isbn]
     );
 
-    console.log('📚 Livro salvo:', result.rows[0]);
+    console.log('Livro salvo:', result.rows[0]);
     res.status(201).json(result.rows[0]);
   } catch (err) {
-    console.error('❌ Erro ao adicionar livro:', err);
+    console.error('Erro ao adicionar livro:', err);
     res.status(500).json({ error: 'Erro ao adicionar livro' });
   }
 };
@@ -97,7 +97,7 @@ export const searchLivrosGoogle = async (req, res) => {
 
   try {
     let query = isbn ? `isbn:${isbn}` : `intitle:${encodeURIComponent(titulo)}`;
-    console.log(`🔍 Buscando livros com query: ${query}`);
+    console.log(`Buscando livros com query: ${query}`);
 
     const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${query}`);
     const data = await response.json();
@@ -134,7 +134,7 @@ export const searchLivrosGoogle = async (req, res) => {
 
     res.json(livros);
   } catch (err) {
-    console.error('❌ Erro ao buscar livro na API do Google Books:', err);
+    console.error('Erro ao buscar livro na API do Google Books:', err);
     res.status(500).json({ error: 'Erro ao buscar livro.' });
   }
 };

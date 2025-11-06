@@ -15,7 +15,7 @@ async function getTransport() {
     });
   }
   const test = await nodemailer.createTestAccount();
-  console.log('📧 Ethereal:', test.user, test.pass);
+  console.log('Ethereal:', test.user, test.pass);
   return nodemailer.createTransport({
     host: 'smtp.ethereal.email',
     port: 587,
@@ -120,7 +120,7 @@ export const forgotPassword = async (req, res) => {
     });
 
     if (nodemailer.getTestMessageUrl) {
-      console.log('📨 Preview URL:', nodemailer.getTestMessageUrl(info));
+      console.log('Preview URL:', nodemailer.getTestMessageUrl(info));
     }
 
     res.json({ success: true, message: 'Link de redefinição enviado por e-mail' });
