@@ -1,21 +1,34 @@
+import dotenv from 'dotenv';
 import pool from '../db.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import nodemailer from 'nodemailer';
 
-const SECRET = process.env.JWT_SECRET || 'dev-secret';
+// --- Carrega variáveis do .env
+dotenv.config();
 
-// util p/ transporte de e-mail (usa Ethereal se SMTP não estiver setado)
+const SECRET = process.env.JWT_SECRET || 'dev-secret';
+const APP_URL = process.env.APP_URL || 'http://localhost:3000';
+
+// =======================================================
+//  Função auxiliar: transporte de e-mail
+// =======================================================
 async function getTransport() {
   if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+    console.log(`Usando Gmail (${process.env.EMAIL_USER})`);
     return nodemailer.createTransport({
       service: 'gmail',
-      auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
     });
   }
+
+  // fallback (modo dev)
   const test = await nodemailer.createTestAccount();
-  console.log('Ethereal:', test.user, test.pass);
+  console.log('Usando Ethereal:', test.user, test.pass);
   return nodemailer.createTransport({
     host: 'smtp.ethereal.email',
     port: 587,
@@ -23,7 +36,9 @@ async function getTransport() {
   });
 }
 
-// --- REGISTER ---
+// =======================================================
+//  REGISTER - Criação de conta
+// =======================================================
 export const register = async (req, res) => {
   const { nome, usuario, email, senha } = req.body;
   if (!nome || !usuario || !email || !senha) {
@@ -40,7 +55,6 @@ export const register = async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(senha, 10);
-
     const sql = `
       INSERT INTO usuarios (nome, usuario, email, senha, perfil, status)
       VALUES ($1,$2,$3,$4,'COMUM','ATIVO')
@@ -53,15 +67,13 @@ export const register = async (req, res) => {
     console.error('REGISTER ERROR:', err);
     if (err.code === '23505') return res.status(409).json({ error: 'Registro duplicado (email/usuario)' });
     if (err.code === '23502') return res.status(400).json({ error: `Campo obrigatório ausente: ${err.column}` });
-    return res.status(500).json({
-      error: err.message,
-      code: err.code,
-      detail: err.detail,
-    });
+    return res.status(500).json({ error: err.message });
   }
 };
 
-// --- LOGIN ---
+// =======================================================
+//  LOGIN
+// =======================================================
 export const login = async (req, res) => {
   const { email, senha } = req.body;
   if (!email || !senha) return res.status(400).json({ error: 'Email e senha obrigatórios' });
@@ -84,8 +96,8 @@ export const login = async (req, res) => {
         nome: user.nome,
         email: user.email,
         usuario: user.usuario,
-        perfil: user.perfil
-      }
+        perfil: user.perfil,
+      },
     });
   } catch (err) {
     console.error('LOGIN ERROR:', err);
@@ -93,7 +105,9 @@ export const login = async (req, res) => {
   }
 };
 
-// --- FORGOT PASSWORD ---
+// =======================================================
+//  FORGOT PASSWORD - Envio de link clicável
+// =======================================================
 export const forgotPassword = async (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ error: 'Email é obrigatório' });
@@ -110,18 +124,38 @@ export const forgotPassword = async (req, res) => {
     );
 
     const transporter = await getTransport();
-    const resetUrl = `http://localhost:3000/reset-password/${token}`;
 
-    const info = await transporter.sendMail({
+    // Deep link e link web
+    const appLink = `entrelinhas://reset-password/${token}`;
+    const webLink = `${APP_URL}/reset-password/${token}`;
+
+    await transporter.sendMail({
       from: process.env.EMAIL_USER || 'no-reply@entrelinhas.dev',
       to: email,
       subject: 'Redefinição de senha - EntreLinhas',
-      text: `Use este link para redefinir sua senha (1h): ${resetUrl}`
+      text: `Olá!\n\nVocê solicitou a redefinição de senha no EntreLinhas.\n\nUse um dos links abaixo (válido por 1h):\n\nAbrir no app: ${appLink}\nAbrir no navegador: ${webLink}\n\nSe você não solicitou, ignore este e-mail.`,
+      html: `
+        <p>Olá!</p>
+        <p>Você solicitou a redefinição de senha no <b>EntreLinhas</b>.</p>
+        <p><b>Use um dos links abaixo (válido por 1h):</b></p>
+        <p>
+          <a href="entrelinhas://reset-password/${token}" 
+             style="color:#6A1B9A;text-decoration:none;font-weight:bold;">
+             Abrir no aplicativo EntreLinhas
+          </a>
+        </p>
+        <p>Ou abra no navegador:<br>
+          <a href="${webLink}" style="color:#F9A825;text-decoration:none;">
+            ${webLink}
+          </a>
+        </p>
+        <p>Se você não solicitou, ignore este e-mail.</p>
+      `,
     });
 
-    if (nodemailer.getTestMessageUrl) {
-      console.log('Preview URL:', nodemailer.getTestMessageUrl(info));
-    }
+    console.log('E-mail de redefinição enviado para', email);
+    console.log('Link app:', appLink);
+    console.log('Link web:', webLink);
 
     res.json({ success: true, message: 'Link de redefinição enviado por e-mail' });
   } catch (err) {
@@ -130,17 +164,21 @@ export const forgotPassword = async (req, res) => {
   }
 };
 
-// --- RESET PASSWORD ---
+// =======================================================
+//  RESET PASSWORD - Nova senha
+// =======================================================
 export const resetPassword = async (req, res) => {
   const { token, novaSenha } = req.body;
-  if (!token || !novaSenha) return res.status(400).json({ error: 'Token e nova senha são obrigatórios' });
+  if (!token || !novaSenha)
+    return res.status(400).json({ error: 'Token e nova senha são obrigatórios' });
 
   try {
     const userRes = await pool.query(
       'SELECT id_usuario FROM usuarios WHERE token_recuperacao=$1 AND expira_token > NOW()',
       [token]
     );
-    if (userRes.rows.length === 0) return res.status(400).json({ error: 'Token inválido ou expirado' });
+    if (userRes.rows.length === 0)
+      return res.status(400).json({ error: 'Token inválido ou expirado' });
 
     const hashed = await bcrypt.hash(novaSenha, 10);
     await pool.query(

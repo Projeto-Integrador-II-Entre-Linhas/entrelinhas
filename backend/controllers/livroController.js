@@ -2,7 +2,7 @@
 import pool from '../db.js';
 import fetch from 'node-fetch';
 
-// --- RF09: Filtrar livros por autor, título, gênero ---
+// RF09: Filtrar livros
 export const getLivros = async (req, res) => {
   const { autor, titulo, genero } = req.query;
   let sql = `SELECT * FROM livros WHERE status='APROVADO'`;
@@ -18,7 +18,7 @@ export const getLivros = async (req, res) => {
   }
   if (genero) {
     sql += ` AND id_livro IN (
-      SELECT id_livro FROM livro_genero lg 
+      SELECT id_livro FROM livro_genero lg
       JOIN generos g ON g.id_genero = lg.id_genero
       WHERE g.nome ILIKE $${params.length + 1}
     )`;
@@ -34,7 +34,7 @@ export const getLivros = async (req, res) => {
   }
 };
 
-// --- RF12: Livro + fichamentos associados ---
+// RF12: Detalhes + fichamentos públicos
 export const getLivroDetalhes = async (req, res) => {
   const { id } = req.params;
   try {
@@ -50,13 +50,19 @@ export const getLivroDetalhes = async (req, res) => {
   }
 };
 
-// --- RF: Adicionar livro pelo ISBN (Google Books API) ---
+// RF06: Cadastrar por ISBN (com Google Books)
 export const addLivroByISBN = async (req, res) => {
   const { isbn } = req.body;
 
   try {
-    console.log(`Buscando ISBN ${isbn} na API do Google Books...`);
-    const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`);
+    const exists = await pool.query('SELECT 1 FROM livros WHERE isbn=$1', [isbn]);
+    if (exists.rows.length > 0) {
+      return res.status(200).json({ message: 'Livro já existe', isbn });
+    }
+
+    const response = await fetch(
+      `https://www.googleapis.com/books/v1/volumes?q=isbn:${encodeURIComponent(isbn)}`
+    );
     const data = await response.json();
 
     if (!data.items || data.totalItems === 0) {
@@ -70,16 +76,17 @@ export const addLivroByISBN = async (req, res) => {
     const descricao = info.description || '';
     const capa = info.imageLinks?.thumbnail || '';
     const editora = info.publisher || '';
-    const ano = info.publishedDate ? info.publishedDate.slice(0, 4) : null;
+    const ano = info.publishedDate ? parseInt(info.publishedDate.slice(0, 4)) : null;
+    const idioma = info.language || null;
+    const num_paginas = info.pageCount || null;
 
     const result = await pool.query(
-      `INSERT INTO livros (titulo, autor, descricao, capa_url, editora, ano_publicacao, isbn, status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, 'APROVADO')
+      `INSERT INTO livros (titulo, autor, descricao, capa_url, editora, ano_publicacao, isbn, idioma, num_paginas, status)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'APROVADO')
        RETURNING *`,
-      [titulo, autor, descricao, capa, editora, ano, isbn]
+      [titulo, autor, descricao, capa, editora, ano, isbn, idioma, num_paginas]
     );
 
-    console.log('Livro salvo:', result.rows[0]);
     res.status(201).json(result.rows[0]);
   } catch (err) {
     console.error('Erro ao adicionar livro:', err);
@@ -87,7 +94,7 @@ export const addLivroByISBN = async (req, res) => {
   }
 };
 
-// --- RFxx: Buscar livro por título OU ISBN na API do Google Books ---
+// RF06: Buscar por título ou ISBN na Google Books
 export const searchLivrosGoogle = async (req, res) => {
   const { titulo, isbn } = req.query;
 
@@ -96,9 +103,7 @@ export const searchLivrosGoogle = async (req, res) => {
   }
 
   try {
-    let query = isbn ? `isbn:${isbn}` : `intitle:${encodeURIComponent(titulo)}`;
-    console.log(`Buscando livros com query: ${query}`);
-
+    const query = isbn ? `isbn:${isbn}` : `intitle:${encodeURIComponent(titulo)}`;
     const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${query}`);
     const data = await response.json();
 
@@ -106,30 +111,32 @@ export const searchLivrosGoogle = async (req, res) => {
       return res.status(404).json({ error: 'Nenhum livro encontrado.' });
     }
 
-    //Filtra apenas livros que tenham ISBN, autor E ano_publicacao
     const livros = data.items
-      .map(item => {
+      .map((item) => {
         const info = item.volumeInfo;
         const ids = info.industryIdentifiers || [];
-        const isbnItem = ids.find(id => id.type === 'ISBN_13') || ids.find(id => id.type === 'ISBN_10');
+        const isbnItem =
+          ids.find((id) => id.type === 'ISBN_13') || ids.find((id) => id.type === 'ISBN_10');
 
-        if (!isbnItem || !info.authors || !info.publishedDate) return null; // ignora incompletos
+        if (!isbnItem || !info.authors || !info.publishedDate) return null;
 
         return {
           titulo: info.title || 'Título desconhecido',
-          autor: info.authors.join(', '),
+          autores: info.authors,
           descricao: info.description || '',
-          capa_url: info.imageLinks?.thumbnail || '',
+          capaUrl: info.imageLinks?.thumbnail || '',
           editora: info.publisher || '',
           ano_publicacao: info.publishedDate?.slice(0, 4),
           google_id: item.id,
           isbn: isbnItem.identifier
         };
       })
-      .filter(l => l !== null);
+      .filter((l) => l !== null);
 
     if (livros.length === 0) {
-      return res.status(404).json({ error: 'Nenhum livro completo encontrado (com ISBN, autor e ano).' });
+      return res
+        .status(404)
+        .json({ error: 'Nenhum livro completo encontrado (com ISBN, autor e ano).' });
     }
 
     res.json(livros);

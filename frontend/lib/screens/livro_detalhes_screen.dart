@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
+import 'fichamento_screen.dart';
 
 class LivroDetalhesScreen extends StatelessWidget {
-  final Map livro; // recebe o livro selecionado
+  final Map livro;
 
   const LivroDetalhesScreen({super.key, required this.livro});
 
   @override
   Widget build(BuildContext context) {
+    final int idLivro = livro['id_livro'] ?? livro['id'] ?? 0;
+
     return Scaffold(
       appBar: AppBar(title: Text(livro['titulo'] ?? 'Detalhes do Livro')),
       body: SingleChildScrollView(
@@ -14,7 +17,7 @@ class LivroDetalhesScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (livro['capa_url'] != null)
+            if (livro['capa_url'] != null && (livro['capa_url'] as String).isNotEmpty)
               Center(
                 child: Image.network(
                   livro['capa_url'],
@@ -37,6 +40,26 @@ class LivroDetalhesScreen extends StatelessWidget {
             Text(
               livro['descricao'] ?? 'Sem descrição disponível.',
               style: const TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 24),
+
+            // RF07: atalho para criar/editar meu fichamento deste livro
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: idLivro == 0
+                    ? null
+                    : () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => FichamentoScreen(livroId: idLivro),
+                          ),
+                        );
+                      },
+                icon: const Icon(Icons.edit),
+                label: const Text('Criar/Editar meu fichamento'),
+              ),
             ),
           ],
         ),

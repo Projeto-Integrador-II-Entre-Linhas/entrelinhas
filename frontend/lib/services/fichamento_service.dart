@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:hive/hive.dart';
 import 'api_service.dart';
-import 'package:http/http.dart' as http;
 
 class FichamentoService {
   final ApiService api = ApiService();
@@ -13,24 +12,42 @@ class FichamentoService {
     return [];
   }
 
-  Future<bool> criarFichamento(Map<String,dynamic> body) async {
+  // RF04: meus fichamentos
+  Future<List> listarMeus() async {
+    final res = await api.get('fichamentos');
+    if (res.statusCode == 200) return List.from(jsonDecode(res.body));
+    return [];
+  }
+
+  // RF07: obter meu fichamento por livro (para editar)
+  Future<Map?> meuPorLivro(int idLivro) async {
+    final res = await api.get('fichamentos/me/$idLivro');
+    if (res.statusCode == 200) {
+      final body = res.body.isNotEmpty ? jsonDecode(res.body) : null;
+      if (body == null) return null;
+      if (body is Map) return body;
+    }
+    return null;
+  }
+
+  // RF07: criar/editar (upsert)
+  Future<bool> upsert(Map<String, dynamic> body) async {
     try {
       final res = await api.post('fichamentos', body);
       if (res.statusCode == 200 || res.statusCode == 201) return true;
-      // se falhar por falta de conexão, salva offline
+      // fallback offline
       if (res.statusCode == 0) {
         await _saveOffline(body);
         return true;
       }
       return false;
-    } catch (e) {
-      // salva offline
+    } catch (_) {
       await _saveOffline(body);
       return true;
     }
   }
 
-  Future<void> _saveOffline(Map<String,dynamic> body) async {
+  Future<void> _saveOffline(Map<String, dynamic> body) async {
     final list = _box.get('pending', defaultValue: <String>[]) as List;
     list.add(jsonEncode(body));
     await _box.put('pending', list);
@@ -41,7 +58,7 @@ class FichamentoService {
     final pending = List<String>.from(list);
     for (final item in pending) {
       try {
-        final body = jsonDecode(item) as Map<String,dynamic>;
+        final body = jsonDecode(item) as Map<String, dynamic>;
         final res = await api.post('fichamentos', body);
         if (res.statusCode == 200 || res.statusCode == 201) {
           pending.remove(item);

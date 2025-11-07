@@ -6,12 +6,12 @@ class FavoritoService {
 
   Future<bool> favoritar(int idFichamento) async {
     final res = await api.post('favoritos', {'id_fichamento': idFichamento});
-    return res.statusCode == 200;
+    return res.statusCode == 200 || res.statusCode == 201;
   }
 
   Future<List> listarFavoritos() async {
     final res = await api.get('favoritos');
-    if(res.statusCode == 200) return List.from(jsonDecode(res.body));
+    if (res.statusCode == 200) return List.from(jsonDecode(res.body));
     return [];
   }
 }

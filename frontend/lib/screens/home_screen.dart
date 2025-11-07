@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import 'livro_cadastro_screen.dart';
-import 'livro_lista_screen.dart'; // 👈 Import da nova tela
+import 'livro_lista_screen.dart';
 import 'fichamento_screen.dart';
 import 'profile_screen.dart';
 import '../services/fichamento_service.dart';
 import '../services/livro_service.dart';
+import '../services/favorito_service.dart';
 import '../services/api_service.dart';
 import '../utils/app_colors.dart';
 
@@ -20,17 +21,33 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final FichamentoService fichService = FichamentoService();
   final LivroService livroService = LivroService();
+  final FavoritoService favService = FavoritoService();
+
   List fichamentosPublicos = [];
+  List meusFichamentos = [];
+  List favoritos = [];
 
   @override
   void initState() {
     super.initState();
-    _loadPublic();
+    _loadAll();
   }
 
-  _loadPublic() async {
-    final list = await fichService.listarPublicos();
-    setState(() => fichamentosPublicos = list);
+  Future<void> _loadAll() async {
+    final pub = await fichService.listarPublicos();
+    List meus = [];
+    List favs = [];
+    try {
+      meus = await fichService.listarMeus();
+      favs = await favService.listarFavoritos();
+    } catch (_) {
+      // usuário não logado ainda ou token inválido
+    }
+    setState(() {
+      fichamentosPublicos = pub;
+      meusFichamentos = meus;
+      favoritos = favs;
+    });
   }
 
   @override
@@ -46,7 +63,9 @@ class _HomeScreenState extends State<HomeScreen> {
             accountEmail: Text(auth.user?['email'] ?? ''),
             currentAccountPicture: CircleAvatar(
               backgroundImage: auth.user?['avatar'] != null
-                  ? NetworkImage('${ApiService.API_BASE_URL.replaceFirst('/api','')}${auth.user!['avatar']}') as ImageProvider
+                  ? NetworkImage(
+                          '${ApiService.API_BASE_URL.replaceFirst('/api', '')}${auth.user!['avatar']}')
+                      as ImageProvider
                   : null,
               child: auth.user?['avatar'] == null ? const Icon(Icons.person) : null,
             ),
@@ -58,7 +77,7 @@ class _HomeScreenState extends State<HomeScreen> {
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const LivroCadastroScreen()),
-            ),
+            ).then((_) => _loadAll()),
           ),
           ListTile(
             title: const Text('Livros Cadastrados'),
@@ -84,31 +103,69 @@ class _HomeScreenState extends State<HomeScreen> {
         ]),
       ),
       body: RefreshIndicator(
-        onRefresh: () async {
-          await _loadPublic();
-        },
+        onRefresh: _loadAll,
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            const Text(
-              'Fichamentos Públicos',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
+            const Text('Meus Fichamentos',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            if (meusFichamentos.isEmpty)
+              const Text('Você ainda não possui fichamentos.')
+            else
+              ...meusFichamentos.map((f) => Card(
+                    child: ListTile(
+                      leading: _capa(f['capa_url']),
+                      title: Text(f['titulo'] ?? 'Fichamento'),
+                      subtitle: Text('Nota: ${f['nota'] ?? '-'}'),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => FichamentoScreen(
+                              livroId: f['id_livro'],
+                              fichamentoExistente: f,
+                            ),
+                          ),
+                        ).then((_) => _loadAll());
+                      },
+                    ),
+                  )),
+
+            const SizedBox(height: 24),
+            const Text('Fichamentos Favoritos',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            if (favoritos.isEmpty)
+              const Text('Você ainda não favoritou nenhum fichamento.')
+            else
+              ...favoritos.map((f) => Card(
+                    child: ListTile(
+                      leading: _capa(f['capa_url']),
+                      title: Text(f['titulo'] ?? 'Fichamento'),
+                      subtitle: Text('Por usuário ${f['id_usuario']} • Nota: ${f['nota'] ?? '-'}'),
+                      onTap: () {}, // abrir detalhe futuramente
+                    ),
+                  )),
+
+            const SizedBox(height: 24),
+            const Text('Fichamentos Públicos',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             ...fichamentosPublicos.map((f) => Card(
                   child: ListTile(
+                    leading: _capa(f['capa_url']),
                     title: Text(f['titulo'] ?? f['introducao'] ?? 'Fichamento'),
-                    subtitle:
-                        Text('Por ${f['id_usuario']} • Nota: ${f['nota'] ?? '-'}'),
+                    subtitle: Text('Por ${f['id_usuario']} • Nota: ${f['nota'] ?? '-'}'),
                     trailing: IconButton(
                       icon: const Icon(Icons.star_border),
                       onPressed: () {
-                        /* favoritar futuramente */
+                        //chamar FavoritoService.favoritar(f['id_fichamento'])
                       },
                     ),
                     onTap: () {},
                   ),
-                ))
+                )),
           ],
         ),
       ),
@@ -118,8 +175,15 @@ class _HomeScreenState extends State<HomeScreen> {
         onPressed: () => Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const FichamentoScreen()),
-        ),
+        ).then((_) => _loadAll()),
       ),
     );
+  }
+
+  Widget _capa(dynamic url) {
+    if (url is String && url.isNotEmpty) {
+      return Image.network(url, width: 40, fit: BoxFit.cover);
+    }
+    return const Icon(Icons.book, size: 40);
   }
 }

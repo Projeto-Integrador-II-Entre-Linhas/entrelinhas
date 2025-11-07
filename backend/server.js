@@ -13,6 +13,10 @@ import solicitacaoRoutes from './routes/solicitacoes.js';
 dotenv.config();
 const app = express();
 
+dotenv.config();
+console.log('EMAIL_USER:', process.env.EMAIL_USER);
+
+
 // === Middlewares ===
 
 // Permite requisições de qualquer origem

@@ -5,7 +5,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application
-        android:label="frontend"
+        android:label="EntreLinhas"
         android:usesCleartextTraffic="true"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
@@ -23,13 +23,24 @@
             <!-- Tema inicial enquanto o Flutter carrega -->
             <meta-data
                 android:name="io.flutter.embedding.android.NormalTheme"
-                android:resource="@style/NormalTheme"
-            />
+                android:resource="@style/NormalTheme" />
 
+            <!-- Intent padrão do app -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
+            <!-- Deep link: abre o app quando clicar no link de redefinição -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="entrelinhas"
+                    android:host="reset-password" />
+            </intent-filter>
+
         </activity>
 
         <!-- Não remova -->

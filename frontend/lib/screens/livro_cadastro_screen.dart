@@ -27,18 +27,20 @@ class _LivroCadastroScreenState extends State<LivroCadastroScreen> {
 
     try {
       List livros;
-      // Se o termo for numérico, trata como ISBN
       if (RegExp(r'^\d+$').hasMatch(termo)) {
         livros = await service.buscarLivrosGoogle(isbn: termo);
       } else {
         livros = await service.buscarLivrosGoogle(titulo: termo);
       }
 
+      if (livros.isEmpty) {
+        _mostrarSolicitacao(termo);
+        return;
+      }
+
       setState(() => resultados = livros);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro ao buscar: $e')),
-      );
+      _mostrarSolicitacao(termo);
     } finally {
       setState(() => loading = false);
     }
@@ -75,6 +77,29 @@ class _LivroCadastroScreenState extends State<LivroCadastroScreen> {
         const SnackBar(content: Text('Erro ao cadastrar livro.')),
       );
     }
+  }
+
+  void _mostrarSolicitacao(String termo) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Livro não encontrado'),
+        content: Text('Deseja solicitar o cadastro do livro "$termo"?'),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await service.solicitarLivro(termo);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Solicitação enviada. Um administrador analisará.')),
+              );
+            },
+            child: const Text('Sim'),
+          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+        ],
+      ),
+    );
   }
 
   @override
@@ -118,7 +143,7 @@ class _LivroCadastroScreenState extends State<LivroCadastroScreen> {
                       itemBuilder: (context, index) {
                         final livro = resultados[index];
                         final titulo = livro['titulo'] ?? 'Sem título';
-                        final autor = (livro['autores'] is List)
+                        final autores = (livro['autores'] is List)
                             ? (livro['autores'] as List).join(', ')
                             : livro['autores'] ?? 'Autor desconhecido';
                         final capa = livro['capaUrl'] ??
@@ -126,13 +151,9 @@ class _LivroCadastroScreenState extends State<LivroCadastroScreen> {
 
                         return Card(
                           child: ListTile(
-                            leading: Image.network(
-                              capa,
-                              width: 50,
-                              fit: BoxFit.cover,
-                            ),
+                            leading: Image.network(capa, width: 50, fit: BoxFit.cover),
                             title: Text(titulo),
-                            subtitle: Text(autor),
+                            subtitle: Text(autores),
                             onTap: () => cadastrarLivro(livro),
                           ),
                         );
