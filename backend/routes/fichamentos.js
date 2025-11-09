@@ -1,25 +1,24 @@
-// routes/fichamentos.js
 import express from 'express';
 import {
   upsertFichamento,
+  getMyFichamentos,
   getFichamentosPublicos,
-  getFichamentosDoUsuario,
-  getMeuFichamentoPorLivro
+  getFichamentoById
 } from '../controllers/fichamentoController.js';
 import { verifyToken } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 
-// RF08 - públicos
+// RF08/RF09: públicos (com filtros)
 router.get('/publicos', getFichamentosPublicos);
 
-// RF04 - meus fichamentos
-router.get('/', verifyToken, getFichamentosDoUsuario);
+// RF07: meus fichamentos
+router.get('/me', verifyToken, getMyFichamentos);
 
-// RF07 - obter meu fichamento por livro (para pré-carregar a edição)
-router.get('/me/:id_livro', verifyToken, getMeuFichamentoPorLivro);
+// RF12/RF08: detalhe
+router.get('/:id', verifyToken, getFichamentoById);
 
-// RF07 - criar/editar (upsert)
+// RF07: criar/editar
 router.post('/', verifyToken, upsertFichamento);
 
 export default router;

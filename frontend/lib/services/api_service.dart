@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:async'; // necessário para TimeoutException
+import 'dart:async';
 import 'package:http_parser/http_parser.dart';
 import 'package:mime/mime.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -9,7 +9,7 @@ import 'package:http/http.dart' as http;
 class ApiService {
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
 
-  // Endereço base da API — ajuste conforme o ambiente
+  //Endereço base da API 
   static const String API_BASE_URL = 'http://192.168.100.12:3000/api';
   // Para o emulador Android, use:
   // static const String API_BASE_URL = 'http://10.0.2.2:3000/api';
@@ -44,9 +44,11 @@ class ApiService {
     } on HttpException {
       return http.Response(jsonEncode({'error': 'Erro HTTP genérico'}), 500);
     } on FormatException {
-      return http.Response(jsonEncode({'error': 'Erro de formato na resposta'}), 500);
+      return http.Response(
+          jsonEncode({'error': 'Erro de formato na resposta'}), 500);
     } on TimeoutException {
-      return http.Response(jsonEncode({'error': 'Tempo limite excedido'}), 504);
+      return http.Response(
+          jsonEncode({'error': 'Tempo limite excedido'}), 504);
     } catch (e) {
       return http.Response(jsonEncode({'error': 'Erro inesperado: $e'}), 500);
     }
@@ -55,7 +57,6 @@ class ApiService {
   // ----------------------------------------------------------
   // MÉTODOS HTTP
   // ----------------------------------------------------------
-
   Future<http.Response> get(String endpoint,
       {Map<String, String>? query}) async {
     final headers = await _headers();
@@ -75,8 +76,7 @@ class ApiService {
     final headers = await _headers();
     return _safeRequest(() async {
       return http
-          .post(_uri(endpoint),
-              headers: headers, body: jsonEncode(body))
+          .post(_uri(endpoint), headers: headers, body: jsonEncode(body))
           .timeout(const Duration(seconds: 20));
     });
   }
@@ -85,8 +85,7 @@ class ApiService {
     final headers = await _headers();
     return _safeRequest(() async {
       return http
-          .put(_uri(endpoint),
-              headers: headers, body: jsonEncode(body))
+          .put(_uri(endpoint), headers: headers, body: jsonEncode(body))
           .timeout(const Duration(seconds: 20));
     });
   }
@@ -133,5 +132,35 @@ class ApiService {
   Future<http.StreamedResponse> uploadAvatar(
       String endpoint, File file) async {
     return uploadFile(endpoint, file, fieldName: 'avatar', method: 'PUT');
+  }
+
+  // ----------------------------------------------------------
+  // PUT MULTIPART COM CAMPOS + ARQUIVO (para perfil, etc.)
+  // ----------------------------------------------------------
+  Future<http.StreamedResponse> putMultipart(
+    String endpoint,
+    Map<String, String> fields, {
+    File? file,
+    String fileField = 'avatar',
+  }) async {
+    final token = await _storage.read(key: 'token');
+    final uri = _uri(endpoint);
+    final req = http.MultipartRequest('PUT', uri);
+
+    if (token != null) req.headers['Authorization'] = 'Bearer $token';
+
+    fields.forEach((k, v) => req.fields[k] = v);
+
+    if (file != null) {
+      final mimeType = lookupMimeType(file.path) ?? 'application/octet-stream';
+      final parts = mimeType.split('/');
+      req.files.add(await http.MultipartFile.fromPath(
+        fileField,
+        file.path,
+        contentType: MediaType(parts[0], parts[1]),
+      ));
+    }
+
+    return req.send();
   }
 }

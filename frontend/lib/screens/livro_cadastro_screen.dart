@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:barcode_scan2/barcode_scan2.dart';
 import '../services/livro_service.dart';
+import 'solicitacao_form_screen.dart';
 
 class LivroCadastroScreen extends StatefulWidget {
   const LivroCadastroScreen({super.key});
@@ -79,26 +80,11 @@ class _LivroCadastroScreenState extends State<LivroCadastroScreen> {
     }
   }
 
+  /// 🌟 Nova versão: abre a tela de solicitação completa
   void _mostrarSolicitacao(String termo) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Livro não encontrado'),
-        content: Text('Deseja solicitar o cadastro do livro "$termo"?'),
-        actions: [
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              await service.solicitarLivro(termo);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Solicitação enviada. Um administrador analisará.')),
-              );
-            },
-            child: const Text('Sim'),
-          ),
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
-        ],
-      ),
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => SolicitacaoFormScreen(termo: termo)),
     );
   }
 

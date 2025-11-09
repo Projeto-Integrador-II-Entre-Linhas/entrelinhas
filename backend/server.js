@@ -1,4 +1,3 @@
-// server.js
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -9,13 +8,13 @@ import livroRoutes from './routes/livros.js';
 import fichamentoRoutes from './routes/fichamentos.js';
 import favoritoRoutes from './routes/favoritos.js';
 import solicitacaoRoutes from './routes/solicitacoes.js';
+import dashboardRoutes from './routes/dashboard.js';
 
 dotenv.config();
 const app = express();
 
 dotenv.config();
 console.log('EMAIL_USER:', process.env.EMAIL_USER);
-
 
 // === Middlewares ===
 
@@ -41,6 +40,7 @@ app.use('/api/livros', livroRoutes);
 app.use('/api/fichamentos', fichamentoRoutes);
 app.use('/api/favoritos', favoritoRoutes);
 app.use('/api/solicitacoes', solicitacaoRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 // === Health check ===
 app.get('/', (_req, res) => res.send('Backend EntreLinhas rodando'));
@@ -58,6 +58,7 @@ app.use((err, _req, res, _next) => {
 
 // === Start do servidor ===
 const PORT = process.env.PORT || 3000;
-//app.listen(PORT, 'localhost', () => console.log(`✅ Servidor rodando na porta ${PORT}`));
+//app.listen(PORT, 'localhost', () => console.log(`Servidor rodando na porta ${PORT}`));
 app.listen(PORT, '0.0.0.0', () => console.log(`Servidor rodando na porta ${PORT}`));
+
 
