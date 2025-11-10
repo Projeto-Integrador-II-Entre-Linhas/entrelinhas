@@ -1,8 +1,8 @@
-// lib/screens/fichamentos_livro_screen.dart
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import 'fichamento_screen.dart';
+import 'fichamento_detalhes_screen.dart'; // <-- IMPORTANTE
 
 class FichamentosDoLivroScreen extends StatefulWidget {
   final int idLivro;
@@ -185,6 +185,18 @@ class _FichamentosDoLivroScreenState extends State<FichamentosDoLivroScreen> {
                                     ],
                                   )
                                 : null,
+
+                            // 🚀 NOVO: abrir detalhes ao clicar
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => FichamentoDetalhesScreen(
+                                    idFichamento: f['id_fichamento'],
+                                  ),
+                                ),
+                              );
+                            },
                           ),
                         );
                       },

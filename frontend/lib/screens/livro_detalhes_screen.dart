@@ -174,12 +174,6 @@ class _LivroDetalhesScreenState extends State<LivroDetalhesScreen> {
       appBar: AppBar(
         title: Text(livro!['titulo'] ?? 'Detalhes do Livro'),
         backgroundColor: const Color(0xFF4F3466),
-        actions: [
-          if (perfil == 'ADMIN')
-            IconButton(onPressed: _editarLivroDialog, icon: const Icon(Icons.edit, color: Colors.white)),
-          if (perfil == 'ADMIN')
-            IconButton(onPressed: _excluirLivro, icon: const Icon(Icons.delete, color: Colors.white)),
-        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -247,30 +241,34 @@ class _LivroDetalhesScreenState extends State<LivroDetalhesScreen> {
             ),
           ),
 
-          if (fichamentos.isNotEmpty) ...[
-            const SizedBox(height: 24),
-            const Text('Fichamentos públicos deste livro',
+          // --- Seção do ADMIN ---
+          if (perfil == 'ADMIN') ...[
+            const SizedBox(height: 32),
+            const Divider(color: Color(0xFF4F3466)),
+            const Text('Administração do Livro',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF4F3466))),
-            const SizedBox(height: 8),
-            ...fichamentos.map((fi) => Card(
-                  color: const Color(0xFFCABCD7),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  child: ListTile(
-                    leading: (fi['capa_url'] ?? '').toString().isNotEmpty
-                        ? ClipRRect(
-                            borderRadius: BorderRadius.circular(6),
-                            child: Image.network(fi['capa_url'], width: 45, height: 65, fit: BoxFit.cover),
-                          )
-                        : const Icon(Icons.menu_book, color: Color(0xFF4F3466)),
-                    title: Text(fi['titulo'] ?? 'Fichamento',
-                        style: const TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF4F3466))),
-                    subtitle: Text(
-                      'Usuário: ${fi['usuario_nome'] ?? '-'} • Nota: ${fi['nota'] ?? '-'}'
-                      '${(fi['frase_favorita'] ?? '').toString().isNotEmpty ? '\n“${fi['frase_favorita']}”' : ''}',
-                      style: const TextStyle(color: Color(0xFF5B3765)),
-                    ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    icon: const Icon(Icons.edit),
+                    label: const Text('Editar'),
+                    style: ElevatedButton.styleFrom(backgroundColor: Color(0xFF947CAC)),
+                    onPressed: _editarLivroDialog,
                   ),
-                )),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    icon: const Icon(Icons.delete),
+                    label: const Text('Excluir'),
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+                    onPressed: _excluirLivro,
+                  ),
+                ),
+              ],
+            ),
           ],
         ]),
       ),
