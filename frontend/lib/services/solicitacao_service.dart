@@ -6,16 +6,16 @@ class SolicitacaoService {
   final ApiService api = ApiService();
 
   // ----------------------------------------------------------
-  // Criar nova solicitação de livro (usuário comum)
+  // Usuário comum — criar nova solicitação de livro
   // ----------------------------------------------------------
-  Future<Map?> criarSolicitacao(Map<String, dynamic> body) async {
-    final r = await api.post('solicitacoes', body);
+  Future<Map<String, dynamic>?> criarSolicitacao(Map<String, dynamic> body) async {
+    final http.Response r = await api.post('solicitacoes', body);
     if (r.statusCode == 201) {
       return jsonDecode(r.body) as Map<String, dynamic>;
     } else {
       try {
-        final msg = jsonDecode(r.body)['error'] ?? 'Erro desconhecido';
-        throw Exception(msg);
+        final err = jsonDecode(r.body);
+        throw Exception(err['error'] ?? 'Erro ao criar solicitação (${r.statusCode})');
       } catch (_) {
         throw Exception('Erro ao criar solicitação (${r.statusCode})');
       }
@@ -23,34 +23,51 @@ class SolicitacaoService {
   }
 
   // ----------------------------------------------------------
-  // Minhas solicitações (usuário autenticado)
+  // Usuário comum — listar suas próprias solicitações
   // ----------------------------------------------------------
   Future<List<Map<String, dynamic>>> minhas() async {
-    final r = await api.get('solicitacoes/me');
-    if (r.statusCode == 200) {
+    final http.Response r = await api.get('solicitacoes/me');
+    if (r.statusCode == 200 && r.body.isNotEmpty) {
       return List<Map<String, dynamic>>.from(jsonDecode(r.body));
-    } else {
-      return [];
     }
+    return [];
   }
 
   // ----------------------------------------------------------
-  // Admin — listar solicitações pendentes
+  // Admin — listar todas as solicitações pendentes
   // ----------------------------------------------------------
   Future<List<Map<String, dynamic>>> pendentes() async {
-    final r = await api.get('solicitacoes');
-    if (r.statusCode == 200) {
+    final http.Response r = await api.get('solicitacoes');
+    if (r.statusCode == 200 && r.body.isNotEmpty) {
       return List<Map<String, dynamic>>.from(jsonDecode(r.body));
-    } else {
-      return [];
     }
+    return [];
   }
 
   // ----------------------------------------------------------
-  // Admin — aprovar solicitação (gera cadastro do livro)
+  // Admin — visualizar detalhes de uma solicitação específica
+  // ----------------------------------------------------------
+  Future<Map<String, dynamic>?> detalhe(int id) async {
+    final http.Response r = await api.get('solicitacoes/$id');
+    if (r.statusCode == 200 && r.body.isNotEmpty) {
+      return jsonDecode(r.body) as Map<String, dynamic>;
+    }
+    return null;
+  }
+
+  // ----------------------------------------------------------
+  // Admin — atualizar informações de uma solicitação
+  // ----------------------------------------------------------
+  Future<bool> atualizar(int id, Map<String, dynamic> body) async {
+    final http.Response r = await api.put('solicitacoes/$id', body);
+    return r.statusCode == 200;
+  }
+
+  // ----------------------------------------------------------
+  // Admin — aprovar solicitação (gera o livro)
   // ----------------------------------------------------------
   Future<bool> aprovar(int id) async {
-    final r = await api.put('solicitacoes/$id/approve', {});
+    final http.Response r = await api.put('solicitacoes/$id/approve', {});
     return r.statusCode == 200;
   }
 
@@ -58,7 +75,7 @@ class SolicitacaoService {
   // Admin — rejeitar solicitação (com motivo opcional)
   // ----------------------------------------------------------
   Future<bool> rejeitar(int id, {String? motivo}) async {
-    final r = await api.put('solicitacoes/$id/reject', {
+    final http.Response r = await api.put('solicitacoes/$id/reject', {
       if (motivo != null && motivo.isNotEmpty) 'motivo': motivo,
     });
     return r.statusCode == 200;

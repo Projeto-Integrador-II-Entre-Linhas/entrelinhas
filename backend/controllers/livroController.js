@@ -1,9 +1,10 @@
-// controllers/livroController.js
 import pool from '../db.js';
 import fetch from 'node-fetch';
 import { ensureLivroGeneros } from '../utils/genres.js';
 
-// -------- Fallback compatível: converte capa/capa_url --------
+// ==========================================================
+//  Função auxiliar: padroniza capa_url
+// ==========================================================
 function capaAlias(row) {
   if (!row) return row;
   if (row.capa_url === undefined && row.capa !== undefined) {
@@ -13,7 +14,7 @@ function capaAlias(row) {
 }
 
 // ==========================================================
-//  RF09 - FILTROS: autor, título, gênero
+//  RF09 - Listar livros com filtros (autor, título, gênero)
 // ==========================================================
 export const getLivros = async (req, res) => {
   const { autor, titulo, genero } = req.query;
@@ -57,7 +58,14 @@ export const getLivroDetalhes = async (req, res) => {
       return res.status(404).json({ error: 'Livro não encontrado' });
 
     const fichamentos = await pool.query(
-      "SELECT * FROM fichamentos WHERE id_livro=$1 AND visibilidade='PUBLICO' ORDER BY data_criacao DESC",
+      `SELECT f.id_fichamento, f.frase_favorita, f.nota, f.visibilidade, f.data_criacao,
+              u.nome AS usuario_nome,
+              l.titulo, l.autor, l.capa_url
+         FROM fichamentos f
+         JOIN usuarios u ON u.id_usuario = f.id_usuario
+         JOIN livros l ON l.id_livro = f.id_livro
+        WHERE f.id_livro=$1 AND f.visibilidade='PUBLICO'
+        ORDER BY f.data_criacao DESC`,
       [id]
     );
 
@@ -69,7 +77,7 @@ export const getLivroDetalhes = async (req, res) => {
 };
 
 // ==========================================================
-//  FUNÇÕES AUXILIARES - APIs Externas (Google / OpenLibrary)
+//  APIs Externas (Google Books / OpenLibrary)
 // ==========================================================
 async function fetchGoogleByISBN(isbn) {
   const r = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${encodeURIComponent(isbn)}`);
@@ -146,7 +154,7 @@ async function fetchOpenLibraryByISBN(isbn) {
 }
 
 // ==========================================================
-//  RF06 - Cadastrar Livro por ISBN (Google → OpenLibrary fallback)
+//  RF06 - Adicionar Livro por ISBN (Google → OpenLibrary)
 // ==========================================================
 export const addLivroByISBN = async (req, res) => {
   const { isbn } = req.body;
@@ -161,8 +169,12 @@ export const addLivroByISBN = async (req, res) => {
     if (!meta)
       return res.status(404).json({ error: 'Livro não encontrado em fontes públicas' });
 
+    if (meta.ano_publicacao == null) {
+      return res.status(400).json({ error: 'Fonte não forneceu ano_publicacao. Preencha manualmente via solicitação.' });
+    }
+
     const result = await pool.query(
-      `INSERT INTO livros 
+      `INSERT INTO livros
         (titulo, autor, descricao, capa_url, editora, ano_publicacao, isbn, idioma, num_paginas, status, fonte_api)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'APROVADO',$10)
        RETURNING *`,
@@ -191,7 +203,7 @@ export const addLivroByISBN = async (req, res) => {
 };
 
 // ==========================================================
-//  RF06 - Buscar Livro (Google Books + fallback OpenLibrary por título ou ISBN)
+//  RF06 - Buscar Livro (Google + OpenLibrary por título/ISBN)
 // ==========================================================
 export const searchLivrosGoogle = async (req, res) => {
   const { titulo, isbn } = req.query;
@@ -201,8 +213,6 @@ export const searchLivrosGoogle = async (req, res) => {
 
   try {
     const q = isbn ? `isbn:${isbn.trim()}` : `intitle:${encodeURIComponent(titulo.trim())}`;
-    console.log('Buscando no Google Books:', q);
-
     const gr = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${q}`);
     const gdata = gr.ok ? await gr.json() : {};
     let out = [];
@@ -230,16 +240,9 @@ export const searchLivrosGoogle = async (req, res) => {
         .filter(Boolean);
     }
 
-    if (out.length) {
-      console.log(`Google Books retornou ${out.length} resultados`);
-      return res.json(out);
-    }
+    if (out.length) return res.json(out);
 
-    // ======================================================
-    // Fallback: tenta OpenLibrary com título ou ISBN
-    // ======================================================
     if (isbn) {
-      console.log('Buscando no OpenLibrary por ISBN:', isbn);
       const or = await fetch(`https://openlibrary.org/isbn/${encodeURIComponent(isbn)}.json`);
       if (or.ok) {
         const data = await or.json();
@@ -247,9 +250,13 @@ export const searchLivrosGoogle = async (req, res) => {
           ? `https://covers.openlibrary.org/b/id/${data.covers[0]}-L.jpg`
           : '';
 
-        const autor = data.authors?.length
-          ? (await (await fetch(`https://openlibrary.org${data.authors[0].key}.json`)).json()).name
-          : 'Autor desconhecido';
+        let autor = 'Autor desconhecido';
+        try {
+          if (data.authors?.length) {
+            const a = await (await fetch(`https://openlibrary.org${data.authors[0].key}.json`)).json();
+            autor = a.name || autor;
+          }
+        } catch {}
 
         const livro = {
           titulo: data.title || 'Título desconhecido',
@@ -257,20 +264,15 @@ export const searchLivrosGoogle = async (req, res) => {
           descricao: data.notes || '',
           capa_url: cover,
           editora: Array.isArray(data.publishers) ? data.publishers[0] : '',
-          ano_publicacao: data.publish_date
-            ? parseInt(String(data.publish_date).slice(-4))
-            : '',
+          ano_publicacao: data.publish_date ? parseInt(String(data.publish_date).slice(-4)) : '',
           google_id: null,
           isbn: isbn,
         };
-
-        console.log('OpenLibrary retornou resultado por ISBN');
         return res.json([livro]);
       }
     }
 
     if (titulo) {
-      console.log('Buscando no OpenLibrary por título:', titulo);
       const or = await fetch(
         `https://openlibrary.org/search.json?title=${encodeURIComponent(titulo)}&limit=15`
       );
@@ -295,16 +297,72 @@ export const searchLivrosGoogle = async (req, res) => {
         })
         .filter(Boolean);
 
-      if (mapped.length) {
-        console.log(`OpenLibrary retornou ${mapped.length} resultados por título`);
-        return res.json(mapped);
-      }
+      if (mapped.length) return res.json(mapped);
     }
 
-    console.log('Nenhum resultado em Google Books nem OpenLibrary');
     return res.status(404).json({ error: 'Nenhum livro encontrado.' });
   } catch (err) {
     console.error('searchLivrosGoogle:', err);
     res.status(500).json({ error: 'Erro ao buscar livro.' });
+  }
+};
+
+// ==========================================================
+//  ADMIN - Atualizar e Excluir Livros
+// ==========================================================
+export const adminUpdateLivro = async (req, res) => {
+  const { id } = req.params;
+  const {
+    titulo, autor, descricao, capa_url, editora, ano_publicacao,
+    isbn, idioma, num_paginas, status
+  } = req.body;
+
+  try {
+    const updates = [];
+    const values = [];
+    let idx = 1;
+
+    const add = (col, val) => {
+      if (val !== undefined) {
+        updates.push(`${col}=$${idx++}`);
+        values.push(val);
+      }
+    };
+
+    add('titulo', titulo);
+    add('autor', autor);
+    add('descricao', descricao);
+    add('capa_url', capa_url);
+    add('editora', editora);
+    add('ano_publicacao', ano_publicacao);
+    add('isbn', isbn);
+    add('idioma', idioma);
+    add('num_paginas', num_paginas);
+    add('status', status);
+
+    if (!updates.length) return res.status(400).json({ error: 'Nada para atualizar' });
+
+    values.push(id);
+    const { rows } = await pool.query(
+      `UPDATE livros SET ${updates.join(', ')} WHERE id_livro=$${idx} RETURNING *`,
+      values
+    );
+
+    if (!rows.length) return res.status(404).json({ error: 'Livro não encontrado' });
+    res.json(rows[0]);
+  } catch (err) {
+    console.error('ADMIN UPDATE LIVRO:', err);
+    res.status(500).json({ error: 'Erro ao atualizar livro' });
+  }
+};
+
+export const adminDeleteLivro = async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query('DELETE FROM livros WHERE id_livro=$1', [id]);
+    res.json({ success: true, message: 'Livro excluído' });
+  } catch (err) {
+    console.error('ADMIN DELETE LIVRO:', err);
+    res.status(500).json({ error: 'Erro ao excluir livro' });
   }
 };

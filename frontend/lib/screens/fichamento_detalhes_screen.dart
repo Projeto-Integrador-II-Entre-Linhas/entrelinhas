@@ -1,5 +1,10 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../services/fichamento_service.dart';
+import '../services/api_service.dart';
+import 'fichamento_screen.dart';
+import 'livro_detalhes_screen.dart';
 
 class FichamentoDetalhesScreen extends StatefulWidget {
   final int idFichamento;
@@ -11,13 +16,28 @@ class FichamentoDetalhesScreen extends StatefulWidget {
 
 class _FichamentoDetalhesScreenState extends State<FichamentoDetalhesScreen> {
   final FichamentoService service = FichamentoService();
+  final ApiService api = ApiService();
+  final storage = const FlutterSecureStorage();
+
   Map? f;
+  int? meuId;
   bool loading = true;
 
   @override
   void initState() {
     super.initState();
+    _loadUser();
     _carregar();
+  }
+
+  Future<void> _loadUser() async {
+    try {
+      final userJson = await storage.read(key: 'user');
+      if (userJson != null) {
+        final u = jsonDecode(userJson);
+        setState(() => meuId = u['id_usuario']);
+      }
+    } catch (_) {}
   }
 
   Future<void> _carregar() async {
@@ -29,41 +49,185 @@ class _FichamentoDetalhesScreenState extends State<FichamentoDetalhesScreen> {
     });
   }
 
+  Future<void> _excluir() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Excluir Fichamento'),
+        content: const Text('Tem certeza que deseja excluir este fichamento?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Excluir'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    final resp = await api.delete('fichamentos/${f!['id_fichamento']}');
+    if (resp.statusCode == 200) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Fichamento excluído com sucesso.')),
+        );
+        Navigator.pop(context, true);
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao excluir: ${resp.body}')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (loading) return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    if (f == null) return const Scaffold(body: Center(child: Text('Fichamento não encontrado')));
+    if (loading) {
+      return const Scaffold(
+        backgroundColor: Color(0xFFD2C9D4),
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (f == null) {
+      return const Scaffold(
+        backgroundColor: Color(0xFFD2C9D4),
+        body: Center(child: Text('Fichamento não encontrado')),
+      );
+    }
+
+    final bool meu = f!['id_usuario'] == meuId;
+    final capa = (f!['capa_url'] ?? '').toString();
+    final titulo = f!['titulo'] ?? 'Sem título';
+    final autor = f!['autor'] ?? 'Autor desconhecido';
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Detalhes do Fichamento')),
-      body: Padding(
+      backgroundColor: const Color(0xFFD2C9D4),
+      appBar: AppBar(
+        title: const Text('Detalhes do Fichamento'),
+        backgroundColor: const Color(0xFF4F3466),
+      ),
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        child: ListView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Introdução', style: const TextStyle(fontWeight: FontWeight.bold)),
-            Text(f!['introducao'] ?? ''),
+            // Capa do livro
+            if (capa.isNotEmpty)
+              Center(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.network(capa, height: 220, fit: BoxFit.cover),
+                ),
+              ),
             const SizedBox(height: 12),
-            Text('Cenário', style: const TextStyle(fontWeight: FontWeight.bold)),
-            Text(f!['espaco'] ?? ''),
-            const SizedBox(height: 12),
-            Text('Personagens', style: const TextStyle(fontWeight: FontWeight.bold)),
-            Text(f!['personagens'] ?? ''),
-            const SizedBox(height: 12),
-            Text('Narrativa', style: const TextStyle(fontWeight: FontWeight.bold)),
-            Text(f!['narrativa'] ?? ''),
-            const SizedBox(height: 12),
-            Text('Críticas', style: const TextStyle(fontWeight: FontWeight.bold)),
-            Text(f!['conclusao'] ?? ''),
-            const SizedBox(height: 12),
-            Text('Frase Favorita: ${f!['frase_favorita'] ?? '-'}'),
-            const SizedBox(height: 12),
-            Text('Formato: ${f!['formato'] ?? '-'}'),
-            const SizedBox(height: 12),
-            Text('Nota: ${f!['nota'] ?? '-'}'),
-            const SizedBox(height: 12),
-            Text('Visibilidade: ${f!['visibilidade'] ?? '-'}'),
+
+            // Informações do livro
+            Text(
+              titulo,
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF4F3466),
+              ),
+            ),
+            Text('Autor: $autor', style: const TextStyle(color: Color(0xFF5B3765))),
+            const Divider(height: 24, color: Color(0xFF947CAC)),
+
+            // Campos do fichamento
+            _campo('Introdução', f!['introducao']),
+            _campo('Cenário', f!['espaco']),
+            _campo('Personagens', f!['personagens']),
+            _campo('Narrativa', f!['narrativa']),
+            _campo('Críticas', f!['conclusao']),
+            _campo('Frase favorita', f!['frase_favorita']),
+            _campo('Formato', f!['formato']),
+            _campo('Nota', f!['nota']?.toString()),
+            _campo('Visibilidade', f!['visibilidade']),
+
+            const SizedBox(height: 24),
+            const Divider(color: Color(0xFF4F3466)),
+
+            // Botões de ação
+            if (meu) ...[
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF947CAC),
+                  minimumSize: const Size(double.infinity, 50),
+                ),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => FichamentoScreen(
+                        fichamentoExistente: f,
+                      ),
+                    ),
+                  ).then((_) => _carregar());
+                },
+                icon: const Icon(Icons.edit, color: Colors.white),
+                label: const Text('Editar Fichamento',
+                    style: TextStyle(color: Colors.white)),
+              ),
+              const SizedBox(height: 10),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red.shade400,
+                  minimumSize: const Size(double.infinity, 50),
+                ),
+                onPressed: _excluir,
+                icon: const Icon(Icons.delete, color: Colors.white),
+                label: const Text('Excluir Fichamento',
+                    style: TextStyle(color: Colors.white)),
+              ),
+              const SizedBox(height: 10),
+            ],
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF4F3466),
+                minimumSize: const Size(double.infinity, 50),
+              ),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => LivroDetalhesScreen(
+                      livro: {
+                        'id_livro': f!['id_livro'],
+                        'titulo': f!['titulo'],
+                        'autor': f!['autor'],
+                        'capa_url': f!['capa_url'],
+                        'descricao': f!['descricao'] ?? '',
+                      },
+                    ),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.auto_stories, color: Colors.white),
+              label: const Text('Ver detalhes do livro',
+                  style: TextStyle(color: Colors.white)),
+            ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _campo(String label, String? valor) {
+    if (valor == null || valor.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label,
+              style: const TextStyle(
+                  fontWeight: FontWeight.bold, color: Color(0xFF4F3466))),
+          Text(valor, style: const TextStyle(color: Color(0xFF2E1A3A))),
+        ],
       ),
     );
   }

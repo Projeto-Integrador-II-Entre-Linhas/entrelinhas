@@ -80,7 +80,6 @@ class _LivroCadastroScreenState extends State<LivroCadastroScreen> {
     }
   }
 
-  /// 🌟 Nova versão: abre a tela de solicitação completa
   void _mostrarSolicitacao(String termo) {
     Navigator.push(
       context,

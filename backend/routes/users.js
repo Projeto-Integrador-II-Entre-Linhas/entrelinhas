@@ -1,6 +1,14 @@
 import express from 'express';
 import { verifyToken, isAdmin } from '../middlewares/authMiddleware.js';
-import { me, listarUsuarios, alterarStatus, excluirUsuario, atualizarPerfil, setPerfil } from '../controllers/userController.js';
+import {
+  me,
+  listarUsuarios,
+  alterarStatus,
+  excluirUsuario,
+  atualizarPerfil,
+  setPerfil,
+  inativarMinhaConta
+} from '../controllers/userController.js';
 import { uploadAvatar } from '../middlewares/uploadMiddleware.js';
 
 const router = express.Router();
@@ -14,5 +22,8 @@ router.delete('/:id', verifyToken, isAdmin, excluirUsuario);
 // Perfil
 router.get('/me', verifyToken, me);
 router.put('/me', verifyToken, uploadAvatar.single('avatar'), atualizarPerfil);
+
+// Usuário inativa a própria conta
+router.put('/me/status', verifyToken, inativarMinhaConta);
 
 export default router;

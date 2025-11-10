@@ -1,6 +1,6 @@
 import pool from '../db.js';
 
-// --- RF07 + RN04: Criar/editar fichamento (um por livro/usuário) ---
+// --- Criar/editar fichamento (um por livro/usuário) ---
 export const upsertFichamento = async (req, res) => {
   const {
     id_fichamento,
@@ -76,12 +76,12 @@ export const upsertFichamento = async (req, res) => {
   }
 };
 
-// --- RF07: listar fichamentos do usuário (para RF04 “meus fichamentos”) ---
+// --- listar fichamentos do usuário ---
 export const getMyFichamentos = async (req, res) => {
   const id_usuario = req.user.sub;
   try {
     const { rows } = await pool.query(
-      `SELECT f.*, l.titulo, l.autor
+      `SELECT f.*, l.titulo, l.autor, l.capa_url
          FROM fichamentos f
          JOIN livros l ON l.id_livro = f.id_livro
         WHERE f.id_usuario=$1
@@ -95,14 +95,35 @@ export const getMyFichamentos = async (req, res) => {
   }
 };
 
-// --- RF08/RF09: listar públicos com filtros (autor, título, gênero) ---
+// --- obter meu fichamento por livro (edição) ---
+export const getMeuPorLivro = async (req, res) => {
+  const id_usuario = req.user.sub;
+  const { idLivro } = req.params;
+  try {
+    const { rows } = await pool.query(
+      `SELECT * FROM fichamentos WHERE id_usuario=$1 AND id_livro=$2 LIMIT 1`,
+      [id_usuario, idLivro]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Nenhum fichamento seu para este livro' });
+    res.json(rows[0]);
+  } catch (err) {
+    console.error('MEU POR LIVRO:', err);
+    res.status(500).json({ error: 'Erro ao buscar seu fichamento' });
+  }
+};
+
+// --- listar públicos com capa, título, nota, usuário, frase favorita ---
 export const getFichamentosPublicos = async (req, res) => {
   const { autor, titulo, genero } = req.query;
   try {
     let sql = `
-      SELECT f.*, l.titulo, l.autor
+      SELECT f.id_fichamento, f.introducao, f.frase_favorita, f.nota, f.visibilidade,
+             f.data_criacao, f.data_atualizacao,
+             u.id_usuario, u.nome AS usuario_nome,
+             l.id_livro, l.titulo, l.autor, l.capa_url
         FROM fichamentos f
         JOIN livros l ON l.id_livro = f.id_livro
+        JOIN usuarios u ON u.id_usuario = f.id_usuario
        WHERE f.visibilidade='PUBLICO'`;
     const params = [];
 
@@ -134,25 +155,78 @@ export const getFichamentosPublicos = async (req, res) => {
   }
 };
 
-// --- RF12/RF08: detalhe de um fichamento (público ou do próprio usuário) ---
+// --- detalhe de um fichamento (público ou do próprio usuário) ---
 export const getFichamentoById = async (req, res) => {
   const { id } = req.params;
   const me = req.user?.sub || null;
 
   try {
     const { rows } = await pool.query(
-      'SELECT * FROM fichamentos WHERE id_fichamento=$1',
+      `SELECT 
+          f.id_fichamento,
+          f.id_usuario,
+          f.id_livro,
+          f.introducao,
+          f.espaco,
+          f.personagens,
+          f.narrativa,
+          f.conclusao,
+          f.visibilidade,
+          f.data_inicio,
+          f.data_fim,
+          f.formato,
+          f.frase_favorita,
+          f.nota,
+          f.data_criacao,
+          f.data_atualizacao,
+          l.titulo,
+          l.autor,
+          l.capa_url,
+          l.descricao,
+          u.nome AS usuario_nome
+        FROM fichamentos f
+        JOIN livros l ON l.id_livro = f.id_livro
+        JOIN usuarios u ON u.id_usuario = f.id_usuario
+       WHERE f.id_fichamento = $1`,
       [id]
     );
-    if (rows.length === 0) return res.status(404).json({ error: 'Fichamento não encontrado' });
+
+    if (rows.length === 0)
+      return res.status(404).json({ error: 'Fichamento não encontrado' });
 
     const f = rows[0];
+
+    // Se for privado e não for o dono, bloquear
     if (f.visibilidade !== 'PUBLICO' && f.id_usuario !== me) {
       return res.status(403).json({ error: 'Este fichamento é privado' });
     }
+
     res.json(f);
   } catch (err) {
     console.error('DETALHE FICHAMENTO:', err);
     res.status(500).json({ error: 'Erro ao buscar fichamento' });
   }
 };
+
+// --- excluir o próprio fichamento ---
+export const deleteFichamento = async (req, res) => {
+  const id_usuario = req.user.sub;
+  const { id } = req.params;
+
+  try {
+    const own = await pool.query(
+      `SELECT 1 FROM fichamentos WHERE id_fichamento=$1 AND id_usuario=$2`,
+      [id, id_usuario]
+    );
+    if (!own.rows.length) return res.status(403).json({ error: 'Você não pode excluir este fichamento' });
+
+    await pool.query(`DELETE FROM favoritos WHERE id_fichamento=$1`, [id]); // limpa favoritos que apontam para ele
+    await pool.query(`DELETE FROM fichamentos WHERE id_fichamento=$1`, [id]);
+
+    res.json({ success: true, message: 'Fichamento excluído' });
+  } catch (err) {
+    console.error('DELETE FICHAMENTO:', err);
+    res.status(500).json({ error: 'Erro ao excluir fichamento' });
+  }
+};
+

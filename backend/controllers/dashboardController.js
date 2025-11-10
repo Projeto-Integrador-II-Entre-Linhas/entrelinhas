@@ -1,11 +1,10 @@
-// controllers/dashboardController.js
 import pool from '../db.js';
 
 export const getDashboard = async (req, res) => {
   const id = req.user.sub;
 
   try {
-    // 👤 Dados do usuário logado
+    // Dados do usuário logado
     const me = await pool.query(
       `SELECT id_usuario, nome, usuario, email, avatar, perfil, generos_preferidos
          FROM usuarios
@@ -13,7 +12,7 @@ export const getDashboard = async (req, res) => {
       [id]
     );
 
-    // ⭐ Fichamentos favoritados
+    // Fichamentos favoritados
     const favoritos = await pool.query(
       `SELECT fi.id_fichamento, fi.nota, l.titulo, l.autor, l.capa_url
          FROM favoritos f
@@ -25,7 +24,7 @@ export const getDashboard = async (req, res) => {
       [id]
     );
 
-    // 📚 Meus fichamentos
+    // Meus fichamentos
     const meus = await pool.query(
       `SELECT fi.id_fichamento, fi.introducao, fi.nota, fi.visibilidade,
               l.titulo, l.autor, l.capa_url
@@ -37,17 +36,28 @@ export const getDashboard = async (req, res) => {
       [id]
     );
 
-    // 📬 Solicitações de livros feitas pelo usuário
-    const solicit = await pool.query(
-      `SELECT id_solicitacao, titulo, autor, status, data_solicitacao
-         FROM solicitacoes_livros
-        WHERE id_usuario = $1
-        ORDER BY data_solicitacao DESC
-        LIMIT 6`,
-      [id]
+    // Fichamentos públicos (de outros usuários)
+    const publicos = await pool.query(
+      `SELECT fi.id_fichamento, fi.introducao, fi.nota, fi.visibilidade,
+              l.titulo, l.autor, l.capa_url, u.nome AS usuario
+         FROM fichamentos fi
+         JOIN livros l ON l.id_livro = fi.id_livro
+         JOIN usuarios u ON u.id_usuario = fi.id_usuario
+        WHERE fi.visibilidade = 'PUBLICO'
+        ORDER BY fi.data_atualizacao DESC NULLS LAST, fi.data_criacao DESC
+        LIMIT 12`
     );
 
-    // 🔮 Recomendações baseadas nos gêneros dos favoritos e fichamentos
+    // Todas as solicitações (não só do usuário)
+    const solicit = await pool.query(
+      `SELECT s.id_solicitacao, s.titulo, s.autor, s.status, s.data_solicitacao, u.nome AS usuario
+         FROM solicitacoes_livros s
+         JOIN usuarios u ON u.id_usuario = s.id_usuario
+        ORDER BY s.data_solicitacao DESC
+        LIMIT 10`
+    );
+
+    // Recomendações baseadas nos gêneros
     const rec = await pool.query(
       `WITH base AS (
          SELECT DISTINCT lg.id_genero
@@ -72,13 +82,23 @@ export const getDashboard = async (req, res) => {
       [id]
     );
 
-    // ✅ Resposta unificada
+    const baseUrl = process.env.BASE_URL || 'http://192.168.100.12:3000';
+    const fixUrls = (arr) => {
+      return arr.map(item => {
+        if (item.capa_url && !item.capa_url.startsWith('http')) {
+          item.capa_url = `${baseUrl}${item.capa_url}`;
+        }
+        return item;
+      });
+    };
+
     res.json({
       user: me.rows[0],
-      favoritos: favoritos.rows,
-      meus_fichamentos: meus.rows,
+      favoritos: fixUrls(favoritos.rows),
+      meus_fichamentos: fixUrls(meus.rows),
+      fichamentos_publicos: fixUrls(publicos.rows),
       solicitacoes: solicit.rows,
-      recomendados: rec.rows,
+      recomendados: fixUrls(rec.rows),
     });
   } catch (e) {
     console.error('DASHBOARD:', e);

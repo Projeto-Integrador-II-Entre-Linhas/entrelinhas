@@ -1,154 +1,138 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class MagicColors {
-  static const Color abyss = Color(0xFF1B1034); // fundo profundo
-  static const Color purpleDark = Color(0xFF2E0E5E);
-  static const Color purple = Color(0xFF6A0DAD);
-  static const Color lilac = Color(0xFFC8A2C8);
-  static const Color aurora = Color(0xFF9F7AEA);
-  static const Color gold = Color(0xFFFFD700);
-  static const Color bg = Color(0xFF150C26);
-  static const Color card = Color(0xFF23113F);
-  static const Color mist = Color(0xFFB39DDB);
-  static const Color runeGlow = Color(0xFFBB86FC);
+class BrandColors {
+  static const Color eggplant = Color(0xFF4F3466);
+  static const Color mauve = Color(0xFF947CAC);
+  static const Color lilac = Color(0xFFA580A6);
+  static const Color haze = Color(0xFFCABCD7);
+  static const Color mist = Color(0xFFD2C9D4);
+
+  static const Color bg = Color(0xFF2E2437);  
+  static const Color surface = Color(0xFF3A2E49);
 }
 
 class AppTheme {
   static final ThemeData lightTheme = ThemeData(
     useMaterial3: false,
     brightness: Brightness.dark,
-    scaffoldBackgroundColor: MagicColors.bg,
-    primaryColor: MagicColors.purple,
-    cardColor: MagicColors.card,
-    hintColor: MagicColors.lilac,
-    shadowColor: MagicColors.aurora.withOpacity(0.4),
+    scaffoldBackgroundColor: BrandColors.bg,
+    primaryColor: BrandColors.eggplant,
+    cardColor: BrandColors.surface,
     iconTheme: const IconThemeData(color: Colors.white70),
 
-    colorScheme: ColorScheme.dark(
-      primary: MagicColors.purple,
-      secondary: MagicColors.gold,
-      surface: MagicColors.card,
-      background: MagicColors.bg,
+    colorScheme: const ColorScheme.dark(
+      primary: BrandColors.eggplant,
+      secondary: BrandColors.mist,
+      surface: BrandColors.surface,
+      background: BrandColors.bg,
       onPrimary: Colors.white,
-      onSecondary: Colors.black,
+      onSecondary: Colors.black87,
       error: Colors.redAccent,
     ),
 
-    // 🧙‍♀️ Tipografia encantada
     textTheme: GoogleFonts.poppinsTextTheme(ThemeData.dark().textTheme).apply(
-      bodyColor: Colors.white.withOpacity(0.92),
+      bodyColor: Colors.white.withOpacity(0.95),
       displayColor: Colors.white,
     ),
 
     appBarTheme: const AppBarTheme(
-      backgroundColor: MagicColors.purpleDark,
+      backgroundColor: BrandColors.eggplant,
       foregroundColor: Colors.white,
-      elevation: 6,
+      elevation: 3,
       centerTitle: true,
       titleTextStyle: TextStyle(
-        fontWeight: FontWeight.bold,
+        fontWeight: FontWeight.w700,
         fontSize: 20,
-        letterSpacing: 0.5,
+        letterSpacing: .2,
         color: Colors.white,
       ),
     ),
 
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: MagicColors.gold,
+        backgroundColor: BrandColors.mist,
         foregroundColor: Colors.black87,
-        shadowColor: MagicColors.aurora,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 18),
-        elevation: 8,
-        textStyle: const TextStyle(
-          fontWeight: FontWeight.w600,
-          fontSize: 16,
-        ),
+        elevation: 2,
+        textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
       ),
     ),
 
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
-        foregroundColor: MagicColors.lilac,
+        foregroundColor: BrandColors.haze,
         textStyle: const TextStyle(fontWeight: FontWeight.w500),
       ),
     ),
 
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: MagicColors.abyss,
-      contentPadding:
-          const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+      fillColor: BrandColors.surface,
+      contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: MagicColors.lilac.withOpacity(.4)),
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: BrandColors.lilac.withOpacity(.5)),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: MagicColors.lilac.withOpacity(.35)),
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: BrandColors.lilac.withOpacity(.45)),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: MagicColors.gold, width: 1.4),
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: BrandColors.mist, width: 1.4),
       ),
       labelStyle: TextStyle(
-        color: MagicColors.lilac.withOpacity(.85),
+        color: Colors.white.withOpacity(.85),
         fontWeight: FontWeight.w500,
       ),
-      hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
+      hintStyle: TextStyle(color: Colors.white.withOpacity(0.65)),
     ),
 
     cardTheme: CardThemeData(
-      color: MagicColors.card,
-      shadowColor: MagicColors.aurora.withOpacity(0.3),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      elevation: 4,
+      color: BrandColors.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 1,
       margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
     ),
 
     snackBarTheme: SnackBarThemeData(
-      backgroundColor: MagicColors.card,
+      backgroundColor: BrandColors.surface,
       contentTextStyle: const TextStyle(color: Colors.white),
       behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      elevation: 6,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 2,
     ),
 
     dialogTheme: DialogThemeData(
-      backgroundColor: MagicColors.card,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      backgroundColor: BrandColors.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       titleTextStyle: const TextStyle(
         fontWeight: FontWeight.w700,
         color: Colors.white,
         fontSize: 18,
       ),
-      contentTextStyle: TextStyle(color: Colors.white.withOpacity(.9)),
+      contentTextStyle: TextStyle(color: Colors.white.withOpacity(.95)),
     ),
 
-    //Chips e tags
     chipTheme: ChipThemeData(
-      backgroundColor: MagicColors.abyss,
+      backgroundColor: BrandColors.surface,
       labelStyle: const TextStyle(color: Colors.white),
-      selectedColor: MagicColors.purple,
+      selectedColor: BrandColors.eggplant,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      side: const BorderSide(color: MagicColors.lilac, width: 0.5),
+      side: BorderSide(color: BrandColors.lilac.withOpacity(.55), width: 0.5),
     ),
 
-    //Action Button (com brilho)
-    floatingActionButtonTheme: FloatingActionButtonThemeData(
-      backgroundColor: MagicColors.purple,
+    floatingActionButtonTheme: const FloatingActionButtonThemeData(
+      backgroundColor: BrandColors.eggplant,
       foregroundColor: Colors.white,
-      elevation: 6,
+      elevation: 2,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.all(Radius.circular(16)),
       ),
     ),
 
-    // Transições
     pageTransitionsTheme: const PageTransitionsTheme(builders: {
       TargetPlatform.android: CupertinoPageTransitionsBuilder(),
       TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),

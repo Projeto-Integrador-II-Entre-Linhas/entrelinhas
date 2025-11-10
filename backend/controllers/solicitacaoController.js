@@ -1,8 +1,9 @@
-// controllers/solicitacaoController.js
 import pool from '../db.js';
 import { ensureLivroGeneros } from '../utils/genres.js';
 
-// -------- Usuário cria solicitação COMPLETA (campos obrigatórios do seu BD) --------
+// ==========================================================
+// USUÁRIO: solicitar novo livro
+// ==========================================================
 export const solicitarLivro = async (req, res) => {
   const id_usuario = req.user.sub;
   const {
@@ -14,90 +15,188 @@ export const solicitarLivro = async (req, res) => {
     return res.status(400).json({ error: 'Campos obrigatórios: titulo, autor, isbn, ano_publicacao, editora' });
   }
 
-  // cria rascunho de livro (status PENDENTE)
-  const livro = await pool.query(
-    `INSERT INTO livros (titulo, autor, capa, isbn, ano_publicacao, editora, num_paginas, descricao, idioma, status)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'PENDENTE')
-     RETURNING *`,
-    [titulo, autor, capa_url || null, isbn, ano_publicacao, editora, num_paginas || null, descricao || null, idioma || null]
-  );
+  try {
+    // Cria o registro do livro pendente
+    const livro = await pool.query(
+      `INSERT INTO livros (titulo, autor, capa_url, isbn, ano_publicacao, editora, num_paginas, descricao, idioma, status)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'PENDENTE')
+       RETURNING *`,
+      [titulo, autor, capa_url || null, isbn, ano_publicacao, editora, num_paginas || null, descricao || null, idioma || null]
+    );
 
-  // vincula solicitação
-  const solicit = await pool.query(
-    `INSERT INTO solicitacoes_livros (id_usuario, id_livro, titulo, autor, ano_publicacao, editora, isbn, descricao, idioma, num_paginas, status)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'PENDENTE')
-     RETURNING *`,
-    [id_usuario, livro.rows[0].id_livro, titulo, autor, ano_publicacao, editora, isbn, descricao || null, idioma || null, num_paginas || null]
-  );
+    // Cria a solicitação vinculada ao livro
+    const solicit = await pool.query(
+      `INSERT INTO solicitacoes_livros (id_usuario, id_livro, titulo, autor, ano_publicacao, editora, isbn, descricao, idioma, num_paginas, status)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'PENDENTE')
+       RETURNING *`,
+      [id_usuario, livro.rows[0].id_livro, titulo, autor, ano_publicacao, editora, isbn, descricao || null, idioma || null, num_paginas || null]
+    );
 
-  // salva gêneros provisórios
-  if (Array.isArray(generos) && generos.length) {
-    await ensureLivroGeneros(livro.rows[0].id_livro, generos);
+    if (Array.isArray(generos) && generos.length) {
+      await ensureLivroGeneros(livro.rows[0].id_livro, generos);
+    }
+
+    res.status(201).json({ success: true, solicitacao: solicit.rows[0] });
+  } catch (err) {
+    console.error('SOLICITAR LIVRO:', err);
+    res.status(500).json({ error: 'Erro ao solicitar livro' });
   }
-
-  res.status(201).json({ success: true, solicitacao: solicit.rows[0] });
 };
 
-// -------- Usuário lista suas solicitações --------
+// ==========================================================
+// USUÁRIO: listar minhas solicitações
+// ==========================================================
 export const minhasSolicitacoes = async (req, res) => {
   const id_usuario = req.user.sub;
-  const { rows } = await pool.query(
-    `SELECT s.*, l.titulo as livro_titulo, l.status as status_livro
-       FROM solicitacoes_livros s
-       LEFT JOIN livros l ON l.id_livro = s.id_livro
-      WHERE s.id_usuario=$1
-      ORDER BY s.data_solicitacao DESC`, [id_usuario]
-  );
-  res.json(rows);
+  try {
+    const { rows } = await pool.query(
+      `SELECT id_solicitacao, titulo, autor, status, data_solicitacao, motivo_rejeicao
+         FROM solicitacoes_livros
+        WHERE id_usuario=$1
+        ORDER BY data_solicitacao DESC`,
+      [id_usuario]
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error('MINHAS SOLICITAÇÕES:', err);
+    res.status(500).json({ error: 'Erro ao listar solicitações' });
+  }
 };
 
-// -------- Admin: listar pendentes --------
+// ==========================================================
+// ADMIN: listar solicitações pendentes
+// ==========================================================
 export const listarPendentes = async (_req, res) => {
-  const { rows } = await pool.query(
-    `SELECT s.*, u.nome as usuario_nome, l.*
-       FROM solicitacoes_livros s
-       JOIN usuarios u ON u.id_usuario=s.id_usuario
-       JOIN livros l ON l.id_livro=s.id_livro
-      WHERE s.status='PENDENTE'
-      ORDER BY s.data_solicitacao DESC`
-  );
-  res.json(rows);
+  try {
+    const { rows } = await pool.query(
+      `SELECT s.*, u.nome AS usuario_nome, u.email
+         FROM solicitacoes_livros s
+         JOIN usuarios u ON u.id_usuario = s.id_usuario
+        WHERE s.status='PENDENTE'
+        ORDER BY s.data_solicitacao DESC`
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error('LISTAR PENDENTES:', err);
+    res.status(500).json({ error: 'Erro ao listar solicitações pendentes' });
+  }
 };
 
-// -------- Admin: aprovar solicitação -> livro APROVADO --------
+// ==========================================================
+// ADMIN: aprovar solicitação (livro passa a APROVADO)
+// ==========================================================
 export const aprovarSolicitacao = async (req, res) => {
   const { id } = req.params;
+  try {
+    const solicit = await pool.query(
+      `UPDATE solicitacoes_livros
+          SET status='APROVADO', data_resposta=NOW()
+        WHERE id_solicitacao=$1
+        RETURNING *`,
+      [id]
+    );
 
-  // Pega solicitação + livro associado
-  const { rows } = await pool.query(
-    `SELECT s.*, l.id_livro FROM solicitacoes_livros s
-      JOIN livros l ON l.id_livro=s.id_livro
-     WHERE s.id_solicitacao=$1`, [id]
-  );
-  if (!rows.length) return res.status(404).json({ error:'Solicitação não encontrada' });
+    if (!solicit.rows.length) {
+      return res.status(404).json({ error: 'Solicitação não encontrada' });
+    }
 
-  const solic = rows[0];
-  await pool.query(`UPDATE livros SET status='APROVADO' WHERE id_livro=$1`, [solic.id_livro]);
-  await pool.query(`UPDATE solicitacoes_livros SET status='APROVADO' WHERE id_solicitacao=$1`, [id]);
+    const s = solicit.rows[0];
+    await pool.query('UPDATE livros SET status=$1 WHERE id_livro=$2', ['APROVADO', s.id_livro]);
 
-  res.json({ success: true, message: 'Solicitação aprovada e livro aprovado' });
+    res.json({ success: true, message: 'Solicitação aprovada', solicitacao: s });
+  } catch (err) {
+    console.error('APROVAR SOLICITAÇÃO:', err);
+    res.status(500).json({ error: 'Erro ao aprovar solicitação' });
+  }
 };
 
-// -------- Admin: rejeitar, opcionalmente com motivo --------
+// ==========================================================
+// ADMIN: rejeitar solicitação com motivo
+// ==========================================================
 export const rejeitarSolicitacao = async (req, res) => {
   const { id } = req.params;
   const { motivo } = req.body;
 
-  const { rows } = await pool.query(
-    `SELECT s.*, l.id_livro FROM solicitacoes_livros s
-      JOIN livros l ON l.id_livro=s.id_livro
-     WHERE s.id_solicitacao=$1`, [id]
-  );
-  if (!rows.length) return res.status(404).json({ error:'Solicitação não encontrada' });
+  try {
+    const solicit = await pool.query(
+      `UPDATE solicitacoes_livros
+          SET status='REJEITADO', motivo_rejeicao=$2, data_resposta=NOW()
+        WHERE id_solicitacao=$1
+        RETURNING *`,
+      [id, motivo || null]
+    );
 
-  const solic = rows[0];
-  await pool.query(`UPDATE livros SET status='REJEITADO', motivo_rejeicao=$1 WHERE id_livro=$2`, [motivo || null, solic.id_livro]);
-  await pool.query(`UPDATE solicitacoes_livros SET status='REJEITADO' WHERE id_solicitacao=$1`, [id]);
+    if (!solicit.rows.length) {
+      return res.status(404).json({ error: 'Solicitação não encontrada' });
+    }
 
-  res.json({ success: true, message: 'Solicitação rejeitada' });
+    // Livro associado volta a "INATIVO" ou permanece PENDENTE, conforme necessidade
+    await pool.query('UPDATE livros SET status=$1 WHERE id_livro=$2', ['INATIVO', solicit.rows[0].id_livro]);
+
+    res.json({ success: true, message: 'Solicitação rejeitada', solicitacao: solicit.rows[0] });
+  } catch (err) {
+    console.error('REJEITAR SOLICITAÇÃO:', err);
+    res.status(500).json({ error: 'Erro ao rejeitar solicitação' });
+  }
+};
+
+// ... imports e handlers existentes permanecem
+
+// ADMIN: obter detalhes de uma solicitação
+export const detalheSolicitacao = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const { rows } = await pool.query(
+      `SELECT s.*, u.nome AS usuario_nome, u.email
+         FROM solicitacoes_livros s
+         JOIN usuarios u ON u.id_usuario = s.id_usuario
+        WHERE s.id_solicitacao=$1`,
+      [id]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Solicitação não encontrada' });
+    res.json(rows[0]);
+  } catch (err) {
+    console.error('DETALHE SOLICITAÇÃO:', err);
+    res.status(500).json({ error: 'Erro ao buscar solicitação' });
+  }
+};
+
+// ADMIN: atualizar dados da solicitação (editar antes de aprovar/rejeitar)
+export const atualizarSolicitacao = async (req, res) => {
+  const { id } = req.params;
+  const {
+    titulo, autor, ano_publicacao, editora, isbn,
+    descricao, idioma, num_paginas, capa_url
+  } = req.body;
+
+  try {
+    const updates = [];
+    const values = [];
+    let i = 1;
+
+    const add = (col, val) => { if (val !== undefined) { updates.push(`${col}=$${i++}`); values.push(val); } };
+
+    add('titulo', titulo);
+    add('autor', autor);
+    add('ano_publicacao', ano_publicacao);
+    add('editora', editora);
+    add('isbn', isbn);
+    add('descricao', descricao);
+    add('idioma', idioma);
+    add('num_paginas', num_paginas);
+    add('capa_url', capa_url);
+
+    if (!updates.length) return res.status(400).json({ error: 'Nada para atualizar' });
+    values.push(id);
+
+    const { rows } = await pool.query(
+      `UPDATE solicitacoes_livros SET ${updates.join(', ')} WHERE id_solicitacao=$${i} RETURNING *`,
+      values
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Solicitação não encontrada' });
+    res.json({ success: true, solicitacao: rows[0] });
+  } catch (err) {
+    console.error('ATUALIZAR SOLICITAÇÃO:', err);
+    res.status(500).json({ error: 'Erro ao atualizar solicitação' });
+  }
 };

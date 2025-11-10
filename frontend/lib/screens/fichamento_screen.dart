@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/fichamento_service.dart';
+import '../services/api_service.dart';
 
 class FichamentoScreen extends StatefulWidget {
   final int? livroId; // quando vier de detalhes do livro
@@ -39,7 +40,6 @@ class _FichamentoScreenState extends State<FichamentoScreen> {
     if (widget.fichamentoExistente != null) {
       _carregarExistente(widget.fichamentoExistente!);
     } else if (_livroId != null) {
-      // tenta pré-carregar meu fichamento daquele livro (se existir)
       _preloadMeuFichamento(_livroId!);
     }
   }
@@ -90,7 +90,19 @@ class _FichamentoScreenState extends State<FichamentoScreen> {
     if (d != null) setState(() => dataFim = d);
   }
 
-  void _salvar() async {
+  Future<void> _excluir() async {
+    if (_idFichamento == null) return;
+    final api = ApiService();
+    final r = await api.delete('fichamentos/$_idFichamento');
+    if (r.statusCode == 200) {
+      _show('Fichamento excluído.');
+      Navigator.pop(context);
+    } else {
+      _show('Erro ao excluir: ${r.body}');
+    }
+  }
+
+  Future<void> _salvar() async {
     if (_livroId == null) {
       _show('Selecione um livro para o fichamento.');
       return;
@@ -116,89 +128,102 @@ class _FichamentoScreenState extends State<FichamentoScreen> {
       'formato': formato,
       'frase_favorita': _frase.text.trim(),
       'nota': nota,
-      // opcional: gêneros vinculados ao livro
-      // 'generos': ['Romance', 'Aventura']
     };
 
     final ok = await service.upsert(body);
     setState(() => loading = false);
+
     if (ok) {
+      _show('Fichamento salvo com sucesso!');
       Navigator.pop(context);
     } else {
-      _show('Erro ao salvar fichamento');
+      _show('Erro ao salvar fichamento.');
     }
   }
 
-  void _show(String msg) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+  void _show(String msg) =>
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
 
   @override
   Widget build(BuildContext context) {
+    final deletarVisivel = _idFichamento != null;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Fichamento')),
+      backgroundColor: const Color(0xFFD2C9D4),
+      appBar: AppBar(
+        title: const Text('Fichamento'),
+        backgroundColor: const Color(0xFF4F3466),
+        actions: [
+          if (deletarVisivel)
+            IconButton(
+              tooltip: 'Excluir fichamento',
+              onPressed: _excluir,
+              icon: const Icon(Icons.delete, color: Colors.white),
+            ),
+        ],
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(children: [
-          // Livro
           Row(
             children: [
               Expanded(
                 child: Text(
-                  _livroId != null ? 'Livro ID: $_livroId' : 'Nenhum livro selecionado',
-                  style: const TextStyle(fontWeight: FontWeight.w600),
+                  _livroId != null
+                      ? 'Livro ID: $_livroId'
+                      : 'Nenhum livro selecionado',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF4F3466),
+                  ),
                 ),
               ),
               TextButton(
-                onPressed: () {
-                  _show('Dica: abra a tela de detalhes do livro e use "Criar/Editar meu fichamento".');
-                },
+                onPressed: () => _show(
+                    'Dica: abra a tela de detalhes do livro e use "Criar/Editar meu fichamento".'),
                 child: const Text('Selecionar livro'),
-              )
+              ),
             ],
           ),
-          const SizedBox(height: 8),
-
-          TextField(controller: _intro, decoration: const InputDecoration(labelText: 'Introdução')),
-          const SizedBox(height: 8),
-          TextField(controller: _cenario, decoration: const InputDecoration(labelText: 'Cenário')),
-          const SizedBox(height: 8),
-          TextField(controller: _personagens, decoration: const InputDecoration(labelText: 'Personagens')),
-          const SizedBox(height: 8),
-          TextField(controller: _narrativa, decoration: const InputDecoration(labelText: 'Narrativa')),
-          const SizedBox(height: 8),
-          TextField(controller: _critica, decoration: const InputDecoration(labelText: 'Críticas')),
-          const SizedBox(height: 8),
-          TextField(controller: _frase, decoration: const InputDecoration(labelText: 'Frase favorita')),
           const SizedBox(height: 12),
 
-          DropdownButtonFormField<String>(
+          _buildField(_intro, 'Introdução'),
+          _buildField(_cenario, 'Cenário'),
+          _buildField(_personagens, 'Personagens'),
+          _buildField(_narrativa, 'Narrativa'),
+          _buildField(_critica, 'Críticas'),
+          _buildField(_frase, 'Frase favorita'),
+
+          const SizedBox(height: 16),
+          _buildDropdown<String>(
+            label: 'Tipo de livro',
             value: formato,
-            onChanged: (v) => setState(() => formato = v!),
-            decoration: const InputDecoration(labelText: 'Tipo de livro'),
             items: const [
               DropdownMenuItem(value: 'fisico', child: Text('Físico')),
               DropdownMenuItem(value: 'e-reader', child: Text('Digital')),
               DropdownMenuItem(value: 'audiobook', child: Text('Audiobook')),
             ],
+            onChanged: (v) => setState(() => formato = v!),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
 
-          DropdownButtonFormField<String>(
+          _buildDropdown<String>(
+            label: 'Visibilidade',
             value: visibilidade,
-            onChanged: (v) => setState(() => visibilidade = v!),
-            decoration: const InputDecoration(labelText: 'Visibilidade'),
             items: const [
               DropdownMenuItem(value: 'PRIVADO', child: Text('Privado')),
               DropdownMenuItem(value: 'PUBLICO', child: Text('Público')),
             ],
+            onChanged: (v) => setState(() => visibilidade = v!),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
 
           Row(
             children: [
               Expanded(
                 child: TextButton.icon(
                   onPressed: _pickDataInicio,
-                  icon: const Icon(Icons.date_range),
+                  icon: const Icon(Icons.date_range, color: Color(0xFF4F3466)),
                   label: Text('Início: ${_fmtDate(dataInicio)}'),
                 ),
               ),
@@ -206,34 +231,43 @@ class _FichamentoScreenState extends State<FichamentoScreen> {
               Expanded(
                 child: TextButton.icon(
                   onPressed: _pickDataFim,
-                  icon: const Icon(Icons.event_available),
+                  icon:
+                      const Icon(Icons.event_available, color: Color(0xFF4F3466)),
                   label: Text('Término: ${dataFim != null ? _fmtDate(dataFim!) : '-'}'),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
 
           Row(
             children: [
-              const Text('Nota:'),
+              const Text('Nota:', style: TextStyle(color: Color(0xFF4F3466))),
               Expanded(
                 child: Slider(
                   value: nota.toDouble(),
                   min: 0,
                   max: 10,
                   divisions: 10,
+                  activeColor: const Color(0xFF947CAC),
                   label: '$nota',
                   onChanged: (v) => setState(() => nota = v.toInt()),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
 
           loading
-              ? const CircularProgressIndicator()
+              ? const CircularProgressIndicator(color: Color(0xFF4F3466))
               : ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF947CAC),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
                   onPressed: _salvar,
                   child: const SizedBox(
                     width: double.infinity,
@@ -245,5 +279,44 @@ class _FichamentoScreenState extends State<FichamentoScreen> {
     );
   }
 
-  String _fmtDate(DateTime d) => '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+  Widget _buildField(TextEditingController controller, String label) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: TextField(
+        controller: controller,
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: const TextStyle(color: Color(0xFF4F3466)),
+          border: const OutlineInputBorder(),
+          focusedBorder: const OutlineInputBorder(
+            borderSide: BorderSide(color: Color(0xFF947CAC)),
+          ),
+        ),
+        maxLines: null,
+      ),
+    );
+  }
+
+  Widget _buildDropdown<T>({
+    required String label,
+    required T value,
+    required List<DropdownMenuItem<T>> items,
+    required ValueChanged<T?> onChanged,
+  }) {
+    return DropdownButtonFormField<T>(
+      decoration: InputDecoration(
+        labelText: label,
+        border: const OutlineInputBorder(),
+        focusedBorder: const OutlineInputBorder(
+          borderSide: BorderSide(color: Color(0xFF947CAC)),
+        ),
+      ),
+      value: value,
+      items: items,
+      onChanged: onChanged,
+    );
+  }
+
+  String _fmtDate(DateTime d) =>
+      '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
 }

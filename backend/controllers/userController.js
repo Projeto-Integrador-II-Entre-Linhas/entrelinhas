@@ -1,7 +1,6 @@
 import pool from '../db.js';
 import bcrypt from 'bcryptjs';
 
-// ------- ADMIN: usuários -------
 export const listarUsuarios = async (_req, res) => {
   const { rows } = await pool.query(
     'SELECT id_usuario, nome, usuario, email, perfil, status, data_criacao FROM usuarios ORDER BY id_usuario'
@@ -24,13 +23,12 @@ export const excluirUsuario = async (req, res) => {
 
 export const setPerfil = async (req, res) => {
   const { id } = req.params;
-  const { perfil } = req.body; // 'ADMIN' | 'COMUM'
+  const { perfil } = req.body;
   if (!['ADMIN','COMUM'].includes(perfil)) return res.status(400).json({ error:'Perfil inválido' });
   await pool.query('UPDATE usuarios SET perfil=$1 WHERE id_usuario=$2', [perfil, id]);
   res.json({ success: true, message: 'Perfil atualizado' });
 };
 
-// ------- Eu (dados do próprio usuário) -------
 export const me = async (req, res) => {
   const { sub } = req.user;
   const { rows } = await pool.query(
@@ -41,7 +39,6 @@ export const me = async (req, res) => {
   res.json(rows[0]);
 };
 
-// ------- Atualizar perfil (todos os campos + avatar) -------
 export const atualizarPerfil = async (req, res) => {
   const id = req.user.sub;
   const { nome, usuario, email, senha, generos_preferidos } = req.body;
@@ -75,5 +72,21 @@ export const atualizarPerfil = async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Erro ao atualizar perfil' });
+  }
+};
+
+// Usuário inativa a própria conta
+export const inativarMinhaConta = async (req, res) => {
+  const id = req.user.sub;
+  const { motivo } = req.body || {};
+  try {
+    await pool.query(
+      `UPDATE usuarios SET status='INATIVO', motivo_inativacao=$1 WHERE id_usuario=$2`,
+      [motivo || null, id]
+    );
+    res.json({ success: true, message: 'Conta inativada' });
+  } catch (e) {
+    console.error('INATIVAR MINHA CONTA:', e);
+    res.status(500).json({ error: 'Erro ao inativar conta' });
   }
 };

@@ -46,11 +46,12 @@ export const getFavoritos = async (req, res) => {
       `SELECT f.id_favorito,
               fi.id_fichamento,
               fi.introducao, fi.nota, fi.visibilidade, fi.data_criacao,
-              l.titulo, l.autor, l.capa AS capa_url
+              l.titulo, l.autor, l.capa_url
          FROM favoritos f
          JOIN fichamentos fi ON fi.id_fichamento = f.id_fichamento
          JOIN livros l ON l.id_livro = fi.id_livro
         WHERE f.id_usuario = $1
+          AND (fi.visibilidade='PUBLICO' OR fi.id_usuario=$1)
         ORDER BY fi.data_atualizacao DESC NULLS LAST, fi.data_criacao DESC`,
       [id_usuario]
     );

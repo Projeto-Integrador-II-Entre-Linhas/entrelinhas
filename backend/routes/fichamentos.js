@@ -3,22 +3,30 @@ import {
   upsertFichamento,
   getMyFichamentos,
   getFichamentosPublicos,
-  getFichamentoById
+  getFichamentoById,
+  getMeuPorLivro,
+  deleteFichamento
 } from '../controllers/fichamentoController.js';
-import { verifyToken } from '../middlewares/authMiddleware.js';
+import { verifyToken, optionalAuth } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 
-// RF08/RF09: públicos (com filtros)
+// Públicos (com filtros)
 router.get('/publicos', getFichamentosPublicos);
 
-// RF07: meus fichamentos
+// Meus fichamentos
 router.get('/me', verifyToken, getMyFichamentos);
 
-// RF12/RF08: detalhe
-router.get('/:id', verifyToken, getFichamentoById);
+// Meu fichamento por livro (para edição)
+router.get('/me/:idLivro', verifyToken, getMeuPorLivro);
 
-// RF07: criar/editar
+// Detalhe por ID (público ou do próprio usuário)
+router.get('/:id', optionalAuth, getFichamentoById);
+
+// Criar/editar
 router.post('/', verifyToken, upsertFichamento);
+
+// Excluir o próprio fichamento
+router.delete('/:id', verifyToken, deleteFichamento);
 
 export default router;

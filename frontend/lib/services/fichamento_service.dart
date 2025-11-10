@@ -6,9 +6,6 @@ class FichamentoService {
   final ApiService api = ApiService();
   final Box _box = Hive.box('fichamentos_offline');
 
-  // ==========================================================
-  // RF08 / RF09 - Listar fichamentos públicos (com filtros)
-  // ==========================================================
   Future<List> listarPublicos({String? autor, String? titulo, String? genero}) async {
     final query = <String, String>{};
     if (autor != null && autor.isNotEmpty) query['autor'] = autor;
@@ -20,18 +17,13 @@ class FichamentoService {
     return [];
   }
 
-  // ==========================================================
-  // RF04 - Listar meus fichamentos
-  // ==========================================================
   Future<List> listarMeus() async {
     final res = await api.get('fichamentos/me');
     if (res.statusCode == 200) return List.from(jsonDecode(res.body));
     return [];
   }
 
-  // ==========================================================
-  // RF07 - Obter meu fichamento por livro (para edição)
-  // ==========================================================
+  // Corrigido: rota de backend implementada como /fichamentos/me/:idLivro
   Future<Map?> meuPorLivro(int idLivro) async {
     final res = await api.get('fichamentos/me/$idLivro');
     if (res.statusCode == 200 && res.body.isNotEmpty) {
@@ -41,15 +33,11 @@ class FichamentoService {
     return null;
   }
 
-  // ==========================================================
-  // RF07 - Criar ou editar (Upsert)
-  // ==========================================================
   Future<bool> upsert(Map<String, dynamic> body) async {
     try {
       final res = await api.post('fichamentos', body);
       if (res.statusCode == 200 || res.statusCode == 201) return true;
 
-      // fallback offline
       if (res.statusCode == 0) {
         await _saveOffline(body);
         return true;
@@ -61,18 +49,12 @@ class FichamentoService {
     }
   }
 
-  // ==========================================================
-  // RNF06 - Armazenar fichamentos offline (fila pendente)
-  // ==========================================================
   Future<void> _saveOffline(Map<String, dynamic> body) async {
     final list = _box.get('pending', defaultValue: <String>[]) as List;
     list.add(jsonEncode(body));
     await _box.put('pending', list);
   }
 
-  // ==========================================================
-  // RNF06 - Sincronizar fichamentos pendentes
-  // ==========================================================
   Future<void> syncPending() async {
     final list = _box.get('pending', defaultValue: <String>[]) as List;
     if (list.isEmpty) return;
@@ -90,19 +72,20 @@ class FichamentoService {
       } catch (_) {}
     }
 
-    // remove enviados
     pending.removeWhere((item) => sent.contains(item));
     await _box.put('pending', pending);
   }
 
-  // ==========================================================
-  // RF12 / RF08 - Obter detalhes de um fichamento
-  // ==========================================================
   Future<Map?> getDetalhe(int id) async {
     final res = await api.get('fichamentos/$id');
     if (res.statusCode == 200 && res.body.isNotEmpty) {
       return jsonDecode(res.body) as Map<String, dynamic>;
     }
     return null;
+  }
+
+  Future<bool> excluir(int idFichamento) async {
+    final res = await api.delete('fichamentos/$idFichamento');
+    return res.statusCode == 200;
   }
 }
