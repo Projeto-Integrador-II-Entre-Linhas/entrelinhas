@@ -22,6 +22,7 @@ class _FichamentoDetalhesScreenState extends State<FichamentoDetalhesScreen> {
   Map? f;
   int? meuId;
   bool loading = true;
+  bool favoritado = false;
 
   @override
   void initState() {
@@ -47,6 +48,41 @@ class _FichamentoDetalhesScreenState extends State<FichamentoDetalhesScreen> {
       f = data;
       loading = false;
     });
+    if (meuId != null) _checkFavorito();
+  }
+
+  Future<void> _checkFavorito() async {
+    try {
+      final r = await api.get('favoritos/${widget.idFichamento}');
+      if (r.statusCode == 200) {
+        final json = jsonDecode(r.body);
+        setState(() => favoritado = json['favoritado']);
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _toggleFavorito() async {
+    try {
+      final r = await api.post('favoritos/${widget.idFichamento}', {});
+      if (r.statusCode == 200) {
+        final json = jsonDecode(r.body);
+        setState(() => favoritado = json['favoritado']);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              favoritado
+                  ? 'Adicionado aos favoritos 💜'
+                  : 'Removido dos favoritos 💔',
+            ),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (_) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Erro ao alternar favorito')),
+      );
+    }
   }
 
   Future<void> _excluir() async {
@@ -109,13 +145,22 @@ class _FichamentoDetalhesScreenState extends State<FichamentoDetalhesScreen> {
       appBar: AppBar(
         title: const Text('Detalhes do Fichamento'),
         backgroundColor: const Color(0xFF4F3466),
+        actions: [
+          if (!meu)
+            IconButton(
+              icon: Icon(
+                favoritado ? Icons.favorite : Icons.favorite_border,
+                color: favoritado ? Colors.pinkAccent : Colors.white,
+              ),
+              onPressed: _toggleFavorito,
+            ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Capa do livro
             if (capa.isNotEmpty)
               Center(
                 child: ClipRRect(
@@ -125,7 +170,6 @@ class _FichamentoDetalhesScreenState extends State<FichamentoDetalhesScreen> {
               ),
             const SizedBox(height: 12),
 
-            // Informações do livro
             Text(
               titulo,
               style: const TextStyle(
@@ -137,7 +181,6 @@ class _FichamentoDetalhesScreenState extends State<FichamentoDetalhesScreen> {
             Text('Autor: $autor', style: const TextStyle(color: Color(0xFF5B3765))),
             const Divider(height: 24, color: Color(0xFF947CAC)),
 
-            // Campos do fichamento
             _campo('Introdução', f!['introducao']),
             _campo('Cenário', f!['espaco']),
             _campo('Personagens', f!['personagens']),
@@ -151,7 +194,6 @@ class _FichamentoDetalhesScreenState extends State<FichamentoDetalhesScreen> {
             const SizedBox(height: 24),
             const Divider(color: Color(0xFF4F3466)),
 
-            // Botões de ação
             if (meu) ...[
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
@@ -169,8 +211,7 @@ class _FichamentoDetalhesScreenState extends State<FichamentoDetalhesScreen> {
                   ).then((_) => _carregar());
                 },
                 icon: const Icon(Icons.edit, color: Colors.white),
-                label: const Text('Editar Fichamento',
-                    style: TextStyle(color: Colors.white)),
+                label: const Text('Editar Fichamento', style: TextStyle(color: Colors.white)),
               ),
               const SizedBox(height: 10),
               ElevatedButton.icon(
@@ -180,8 +221,7 @@ class _FichamentoDetalhesScreenState extends State<FichamentoDetalhesScreen> {
                 ),
                 onPressed: _excluir,
                 icon: const Icon(Icons.delete, color: Colors.white),
-                label: const Text('Excluir Fichamento',
-                    style: TextStyle(color: Colors.white)),
+                label: const Text('Excluir Fichamento', style: TextStyle(color: Colors.white)),
               ),
               const SizedBox(height: 10),
             ],
@@ -207,8 +247,7 @@ class _FichamentoDetalhesScreenState extends State<FichamentoDetalhesScreen> {
                 );
               },
               icon: const Icon(Icons.auto_stories, color: Colors.white),
-              label: const Text('Ver detalhes do livro',
-                  style: TextStyle(color: Colors.white)),
+              label: const Text('Ver detalhes do livro', style: TextStyle(color: Colors.white)),
             ),
           ],
         ),
