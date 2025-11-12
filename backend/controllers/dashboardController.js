@@ -82,7 +82,7 @@ export const getDashboard = async (req, res) => {
       [id]
     );
 
-    const baseUrl = process.env.BASE_URL || 'http://192.168.100.12:3000';
+    const baseUrl = process.env.BASE_URL || 'http://172.16.41.133:3000';
     const fixUrls = (arr) => {
       return arr.map(item => {
         if (item.capa_url && !item.capa_url.startsWith('http')) {

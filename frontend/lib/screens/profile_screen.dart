@@ -180,7 +180,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 ? FileImage(_avatar!)
                                 : (avatarUrl != null
                                     ? NetworkImage(
-                                        'http://192.168.100.12:3000$avatarUrl')
+                                        'http://172.16.41.133:3000$avatarUrl')
                                     : null) as ImageProvider?,
                             child: _avatar == null && avatarUrl == null
                                 ? const Icon(Icons.camera_alt,

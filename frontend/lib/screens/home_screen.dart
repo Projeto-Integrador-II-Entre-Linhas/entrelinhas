@@ -45,7 +45,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final userDash = data?['user'];
     final avatarPath = (userDash?['avatar'] ?? '') as String;
     final avatarUrl =
-        avatarPath.isNotEmpty ? 'http://192.168.100.12:3000$avatarPath' : null;
+        avatarPath.isNotEmpty ? 'http://172.16.41.133:3000$avatarPath' : null;
 
     return Scaffold(
       backgroundColor: const Color(0xFFD2C9D4),
@@ -244,7 +244,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            onTap: () => auth.logout(),
+            onTap: () async {
+              await auth.logout();
+              Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+            },
           ),
         ],
       ),
