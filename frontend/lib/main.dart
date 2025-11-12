@@ -36,11 +36,9 @@ class _MyAppState extends State<MyApp> {
 
   void _initDeepLinks() async {
     try {
-      // Obtém o link inicial (caso o app tenha sido aberto por um link)
-      final initialUri = await _appLinks.getInitialLink(); // ← novo nome do método
+      final initialUri = await _appLinks.getInitialLink();
       if (initialUri != null) _handleUri(initialUri);
 
-      // Escuta novos links enquanto o app está aberto
       _appLinks.uriLinkStream.listen((uri) {
         _handleUri(uri);
       });
@@ -50,7 +48,6 @@ class _MyAppState extends State<MyApp> {
   }
 
   void _handleUri(Uri uri) {
-    // Exemplo esperado: entrelinhas://reset-password/<token>
     if (uri.scheme == 'entrelinhas' && uri.host == 'reset-password') {
       final token = uri.pathSegments.isNotEmpty ? uri.pathSegments.first : '';
       if (token.isNotEmpty) {

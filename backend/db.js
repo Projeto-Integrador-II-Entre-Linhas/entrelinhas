@@ -9,7 +9,6 @@ const pool = new Pool({
   database: process.env.DB_NAME || 'entrelinhas_app',
 });
 
-// teste imediato de conexão
 pool.query('SELECT 1').then(() => {
   console.log('Postgres conectado');
 }).catch((e) => {

@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import '../services/fichamento_service.dart';
 import '../services/api_service.dart';
+import '../services/offline_sync_service.dart';
+
+final OfflineSyncService _offline = OfflineSyncService();
 
 class FichamentoScreen extends StatefulWidget {
-  final int? livroId; // quando vier de detalhes do livro
-  final Map? fichamentoExistente; // quando for editar
+  final int? livroId;
+  final Map? fichamentoExistente;
 
   const FichamentoScreen({super.key, this.livroId, this.fichamentoExistente});
 
@@ -29,9 +32,10 @@ class _FichamentoScreenState extends State<FichamentoScreen> {
   int nota = 5;
 
   int? _livroId;
-  int? _idFichamento; // para editar
-
+  int? _idFichamento;
   bool loading = false;
+
+  List<String> generosSelecionados = [];
 
   @override
   void initState() {
@@ -40,7 +44,33 @@ class _FichamentoScreenState extends State<FichamentoScreen> {
     if (widget.fichamentoExistente != null) {
       _carregarExistente(widget.fichamentoExistente!);
     } else if (_livroId != null) {
-      _preloadMeuFichamento(_livroId!);
+      _preloadMeuFichamento(_livroId!).then((_) async {
+        if (_idFichamento == null && _livroId != null) {
+          final draft = await _offline.loadDraft(_livroId!);
+          if (draft != null) {
+            _intro.text = draft['introducao'] ?? '';
+            _cenario.text = draft['espaco'] ?? '';
+            _personagens.text = draft['personagens'] ?? '';
+            _narrativa.text = draft['narrativa'] ?? '';
+            _critica.text = draft['conclusao'] ?? '';
+            _frase.text = draft['frase_favorita'] ?? '';
+            visibilidade = draft['visibilidade'] ?? 'PRIVADO';
+            formato = draft['formato'] ?? 'fisico';
+            nota = (draft['nota'] ?? 5) is int
+                ? draft['nota']
+                : int.tryParse('${draft['nota']}') ?? 5;
+            final di = DateTime.tryParse(draft['data_inicio'] ?? '');
+            final df = draft['data_fim'] != null
+                ? DateTime.tryParse(draft['data_fim'])
+                : null;
+            if (di != null) dataInicio = di;
+            dataFim = df;
+            generosSelecionados =
+                (draft['generos'] as List?)?.map((e) => e.toString()).toList() ?? [];
+            setState(() {});
+          }
+        }
+      });
     }
   }
 
@@ -55,18 +85,21 @@ class _FichamentoScreenState extends State<FichamentoScreen> {
     _frase.text = f['frase_favorita'] ?? '';
     visibilidade = f['visibilidade'] ?? 'PRIVADO';
     formato = f['formato'] ?? 'fisico';
-    nota = (f['nota'] ?? 5) is int ? f['nota'] : int.tryParse('${f['nota']}') ?? 5;
+    nota = (f['nota'] ?? 5) is int
+        ? f['nota']
+        : int.tryParse('${f['nota']}') ?? 5;
     dataInicio = DateTime.tryParse(f['data_inicio'] ?? '') ?? DateTime.now();
-    dataFim = (f['data_fim'] != null) ? DateTime.tryParse(f['data_fim']) : null;
+    dataFim =
+        (f['data_fim'] != null) ? DateTime.tryParse(f['data_fim']) : null;
+    generosSelecionados =
+        (f['generos'] as List?)?.map((e) => e.toString()).toList() ?? [];
     setState(() {});
   }
 
   Future<void> _preloadMeuFichamento(int idLivro) async {
     try {
       final f = await service.meuPorLivro(idLivro);
-      if (f != null) {
-        _carregarExistente(f);
-      }
+      if (f != null) _carregarExistente(f);
     } catch (_) {}
   }
 
@@ -128,13 +161,15 @@ class _FichamentoScreenState extends State<FichamentoScreen> {
       'formato': formato,
       'frase_favorita': _frase.text.trim(),
       'nota': nota,
+      'generos': generosSelecionados,
     };
 
     final ok = await service.upsert(body);
     setState(() => loading = false);
 
     if (ok) {
-      _show('Fichamento salvo com sucesso!');
+      if (_livroId != null) await _offline.saveDraft(_livroId!, body);
+      _show('Fichamento salvo com sucesso.');
       Navigator.pop(context);
     } else {
       _show('Erro ao salvar fichamento.');
@@ -143,6 +178,50 @@ class _FichamentoScreenState extends State<FichamentoScreen> {
 
   void _show(String msg) =>
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+
+  Widget _buildGenerosSelector() {
+    final generosDisponiveis = [
+      'Romance', 'Aventura', 'Mistério', 'Drama', 'Ficção científica',
+      'Religião', 'Fantasia', 'História', 'Autoajuda', 'Poesia'
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Gêneros relacionados',
+          style: TextStyle(
+            color: Color(0xFF4F3466),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          children: generosDisponiveis.map((g) {
+            final selecionado = generosSelecionados.contains(g);
+            return FilterChip(
+              label: Text(g),
+              selected: selecionado,
+              onSelected: (v) {
+                setState(() {
+                  if (v) {
+                    generosSelecionados.add(g);
+                  } else {
+                    generosSelecionados.remove(g);
+                  }
+                });
+              },
+              selectedColor: const Color(0xFF947CAC),
+              labelStyle: TextStyle(
+                color: selecionado ? Colors.white : const Color(0xFF4F3466),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -165,28 +244,6 @@ class _FichamentoScreenState extends State<FichamentoScreen> {
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  _livroId != null
-                      ? 'Livro ID: $_livroId'
-                      : 'Nenhum livro selecionado',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF4F3466),
-                  ),
-                ),
-              ),
-              TextButton(
-                onPressed: () => _show(
-                    'Dica: abra a tela de detalhes do livro e use "Criar/Editar meu fichamento".'),
-                child: const Text('Selecionar livro'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-
           _buildField(_intro, 'Introdução'),
           _buildField(_cenario, 'Cenário'),
           _buildField(_personagens, 'Personagens'),
@@ -218,6 +275,10 @@ class _FichamentoScreenState extends State<FichamentoScreen> {
           ),
           const SizedBox(height: 16),
 
+          // 🔹 Seletor de gêneros
+          _buildGenerosSelector(),
+          const SizedBox(height: 16),
+
           Row(
             children: [
               Expanded(
@@ -231,9 +292,9 @@ class _FichamentoScreenState extends State<FichamentoScreen> {
               Expanded(
                 child: TextButton.icon(
                   onPressed: _pickDataFim,
-                  icon:
-                      const Icon(Icons.event_available, color: Color(0xFF4F3466)),
-                  label: Text('Término: ${dataFim != null ? _fmtDate(dataFim!) : '-'}'),
+                  icon: const Icon(Icons.event_available, color: Color(0xFF4F3466)),
+                  label: Text(
+                      'Término: ${dataFim != null ? _fmtDate(dataFim!) : '-'}'),
                 ),
               ),
             ],

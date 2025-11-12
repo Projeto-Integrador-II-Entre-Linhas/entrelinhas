@@ -10,7 +10,7 @@ import {
 
 const router = express.Router();
 
-// Adiciona favorito manualmente
+// Adiciona favorito 
 router.post('/', verifyToken, addFavorito);
 
 // Remove favorito

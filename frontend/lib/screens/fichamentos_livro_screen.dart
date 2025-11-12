@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import 'fichamento_screen.dart';
-import 'fichamento_detalhes_screen.dart'; // <-- IMPORTANTE
+import 'fichamento_detalhes_screen.dart';
 
 class FichamentosDoLivroScreen extends StatefulWidget {
   final int idLivro;
@@ -185,8 +185,7 @@ class _FichamentosDoLivroScreenState extends State<FichamentosDoLivroScreen> {
                                     ],
                                   )
                                 : null,
-
-                            // 🚀 NOVO: abrir detalhes ao clicar
+                                
                             onTap: () {
                               Navigator.push(
                                 context,

@@ -11,7 +11,7 @@ class ApiService {
 
   //Endereço base da API 
   static const String API_BASE_URL = 'http://192.168.100.12:3000/api';
-  // Para o emulador Android, use:
+  // Para o emulador Android:
   // static const String API_BASE_URL = 'http://10.0.2.2:3000/api';
 
   Uri _uri(String endpoint) => Uri.parse(

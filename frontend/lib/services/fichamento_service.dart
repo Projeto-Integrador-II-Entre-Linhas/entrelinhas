@@ -22,8 +22,7 @@ class FichamentoService {
     if (res.statusCode == 200) return List.from(jsonDecode(res.body));
     return [];
   }
-
-  // Corrigido: rota de backend implementada como /fichamentos/me/:idLivro
+  
   Future<Map?> meuPorLivro(int idLivro) async {
     final res = await api.get('fichamentos/me/$idLivro');
     if (res.statusCode == 200 && res.body.isNotEmpty) {

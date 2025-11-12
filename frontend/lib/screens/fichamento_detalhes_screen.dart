@@ -8,10 +8,15 @@ import 'livro_detalhes_screen.dart';
 
 class FichamentoDetalhesScreen extends StatefulWidget {
   final int idFichamento;
-  const FichamentoDetalhesScreen({super.key, required this.idFichamento});
+
+  const FichamentoDetalhesScreen({
+    super.key,
+    required this.idFichamento,
+  });
 
   @override
-  State<FichamentoDetalhesScreen> createState() => _FichamentoDetalhesScreenState();
+  State<FichamentoDetalhesScreen> createState() =>
+      _FichamentoDetalhesScreenState();
 }
 
 class _FichamentoDetalhesScreenState extends State<FichamentoDetalhesScreen> {
@@ -90,9 +95,13 @@ class _FichamentoDetalhesScreenState extends State<FichamentoDetalhesScreen> {
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Excluir Fichamento'),
-        content: const Text('Tem certeza que deseja excluir este fichamento?'),
+        content:
+            const Text('Tem certeza que deseja excluir este fichamento?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () => Navigator.pop(context, true),
@@ -178,7 +187,10 @@ class _FichamentoDetalhesScreenState extends State<FichamentoDetalhesScreen> {
                 color: Color(0xFF4F3466),
               ),
             ),
-            Text('Autor: $autor', style: const TextStyle(color: Color(0xFF5B3765))),
+            Text(
+              'Autor: $autor',
+              style: const TextStyle(color: Color(0xFF5B3765)),
+            ),
             const Divider(height: 24, color: Color(0xFF947CAC)),
 
             _campo('Introdução', f!['introducao']),
@@ -190,6 +202,38 @@ class _FichamentoDetalhesScreenState extends State<FichamentoDetalhesScreen> {
             _campo('Formato', f!['formato']),
             _campo('Nota', f!['nota']?.toString()),
             _campo('Visibilidade', f!['visibilidade']),
+
+            // Gêneros relacionados do livro
+            if (f!['generos'] != null && (f!['generos'] as List).isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Gêneros relacionados',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF4F3466),
+                      ),
+                    ),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: -8,
+                      children: (f!['generos'] as List)
+                          .map<Widget>(
+                            (g) => Chip(
+                              label: Text('$g'),
+                              backgroundColor: const Color(0xFFE9E0EF),
+                              labelStyle:
+                                  const TextStyle(color: Color(0xFF4F3466)),
+                            ),
+                          )
+                          .toList(),
+                    ),
+                  ],
+                ),
+              ),
 
             const SizedBox(height: 24),
             const Divider(color: Color(0xFF4F3466)),
@@ -211,7 +255,10 @@ class _FichamentoDetalhesScreenState extends State<FichamentoDetalhesScreen> {
                   ).then((_) => _carregar());
                 },
                 icon: const Icon(Icons.edit, color: Colors.white),
-                label: const Text('Editar Fichamento', style: TextStyle(color: Colors.white)),
+                label: const Text(
+                  'Editar Fichamento',
+                  style: TextStyle(color: Colors.white),
+                ),
               ),
               const SizedBox(height: 10),
               ElevatedButton.icon(
@@ -221,10 +268,14 @@ class _FichamentoDetalhesScreenState extends State<FichamentoDetalhesScreen> {
                 ),
                 onPressed: _excluir,
                 icon: const Icon(Icons.delete, color: Colors.white),
-                label: const Text('Excluir Fichamento', style: TextStyle(color: Colors.white)),
+                label: const Text(
+                  'Excluir Fichamento',
+                  style: TextStyle(color: Colors.white),
+                ),
               ),
               const SizedBox(height: 10),
             ],
+
             ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF4F3466),
@@ -247,7 +298,10 @@ class _FichamentoDetalhesScreenState extends State<FichamentoDetalhesScreen> {
                 );
               },
               icon: const Icon(Icons.auto_stories, color: Colors.white),
-              label: const Text('Ver detalhes do livro', style: TextStyle(color: Colors.white)),
+              label: const Text(
+                'Ver detalhes do livro',
+                style: TextStyle(color: Colors.white),
+              ),
             ),
           ],
         ),
@@ -262,10 +316,17 @@ class _FichamentoDetalhesScreenState extends State<FichamentoDetalhesScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label,
-              style: const TextStyle(
-                  fontWeight: FontWeight.bold, color: Color(0xFF4F3466))),
-          Text(valor, style: const TextStyle(color: Color(0xFF2E1A3A))),
+          Text(
+            label,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF4F3466),
+            ),
+          ),
+          Text(
+            valor,
+            style: const TextStyle(color: Color(0xFF2E1A3A)),
+          ),
         ],
       ),
     );

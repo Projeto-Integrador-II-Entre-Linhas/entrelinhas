@@ -14,7 +14,7 @@ class AuthProvider extends ChangeNotifier {
   Future<void> tryAutoLogin() async {
     final token = await _storage.read(key: 'token');
     if (token != null) {
-      // opcional: verificar validade do token (decoding) ou consultar /api/users/me
+      //verifica validade do token (decoding) ou consultar /api/users/me
       _isAuthenticated = true;
       // carregar user salvo
       final userJson = await _storage.read(key: 'user');

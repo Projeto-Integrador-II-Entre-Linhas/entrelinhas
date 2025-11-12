@@ -26,7 +26,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     try {
       final api = ApiService();
       final res = await api.post('auth/reset-password', {
-        'token': widget.token, // token vem do deep link
+        'token': widget.token,
         'novaSenha': novaSenha,
       });
 

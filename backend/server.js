@@ -18,19 +18,10 @@ console.log('EMAIL_USER:', process.env.EMAIL_USER);
 
 // === Middlewares ===
 
-// Permite requisições de qualquer origem
 app.use(cors({ origin: '*', methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'] }));
-
-// Permite receber JSON no body
 app.use(express.json());
-
-// Permite receber form data (x-www-form-urlencoded)
 app.use(express.urlencoded({ extended: true }));
-
-// Servir arquivos estáticos (uploads)
 app.use('/uploads', express.static('uploads'));
-
-// Logger de requisições
 app.use(morgan('dev'));
 
 // === Rotas ===

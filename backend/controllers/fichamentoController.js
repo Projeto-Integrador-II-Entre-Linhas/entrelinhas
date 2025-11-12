@@ -15,7 +15,8 @@ export const upsertFichamento = async (req, res) => {
     data_fim,
     formato,
     frase_favorita,
-    nota
+    nota,
+    generos
   } = req.body;
 
   const id_usuario = req.user.sub;
@@ -34,6 +35,8 @@ export const upsertFichamento = async (req, res) => {
       return res.status(400).json({ error: 'Você já possui um fichamento para este livro.' });
     }
 
+    let rows;
+
     if (id_fichamento) {
       // RN06 – só o dono edita
       const owner = await pool.query(
@@ -50,26 +53,44 @@ export const upsertFichamento = async (req, res) => {
                visibilidade=$6, data_inicio=$7, data_fim=$8, formato=$9, frase_favorita=$10,
                nota=$11, data_atualizacao=NOW()
          WHERE id_fichamento=$12 AND id_usuario=$13
-     RETURNING *`;
-      const { rows } = await pool.query(sql, [
+         RETURNING *`;
+      ({ rows } = await pool.query(sql, [
         introducao, espaco, personagens, narrativa, conclusao,
         visibilidade || 'PRIVADO', data_inicio, data_fim, formato,
         frase_favorita, nota, id_fichamento, id_usuario
-      ]);
-      return res.json(rows[0]);
+      ]));
+    } else {
+      const sql = `
+        INSERT INTO fichamentos
+          (id_usuario, id_livro, introducao, espaco, personagens, narrativa, conclusao,
+           visibilidade, data_inicio, data_fim, formato, frase_favorita, nota)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+        RETURNING *`;
+      ({ rows } = await pool.query(sql, [
+        id_usuario, id_livro, introducao, espaco, personagens, narrativa, conclusao,
+        visibilidade || 'PRIVADO', data_inicio, data_fim, formato, frase_favorita, nota
+      ]));
     }
 
-    const sql = `
-      INSERT INTO fichamentos
-        (id_usuario, id_livro, introducao, espaco, personagens, narrativa, conclusao,
-         visibilidade, data_inicio, data_fim, formato, frase_favorita, nota)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
-      RETURNING *`;
-    const { rows } = await pool.query(sql, [
-      id_usuario, id_livro, introducao, espaco, personagens, narrativa, conclusao,
-      visibilidade || 'PRIVADO', data_inicio, data_fim, formato, frase_favorita, nota
-    ]);
-    return res.status(201).json(rows[0]);
+    const fichamentoId = rows[0].id_fichamento;
+
+    // --- Vincular gêneros, se enviados ---
+    if (generos && Array.isArray(generos) && generos.length > 0) {
+      const { rows: generosRows } = await pool.query(
+        `SELECT id_genero FROM generos WHERE nome = ANY($1)`,
+        [generos]
+      );
+      const idGeneros = generosRows.map(g => g.id_genero);
+      await pool.query(`DELETE FROM fichamento_genero WHERE id_fichamento=$1`, [fichamentoId]);
+      for (const idg of idGeneros) {
+        await pool.query(
+          `INSERT INTO fichamento_genero (id_fichamento, id_genero) VALUES ($1,$2)`,
+          [fichamentoId, idg]
+        );
+      }
+    }
+
+    return res.status(id_fichamento ? 200 : 201).json(rows[0]);
   } catch (err) {
     console.error('UPSERT FICHAMENTO:', err);
     res.status(500).json({ error: 'Erro ao salvar fichamento' });
@@ -95,7 +116,7 @@ export const getMyFichamentos = async (req, res) => {
   }
 };
 
-// --- obter meu fichamento por livro (edição) ---
+// --- obter meu fichamento por livro ---
 export const getMeuPorLivro = async (req, res) => {
   const id_usuario = req.user.sub;
   const { idLivro } = req.params;
@@ -112,7 +133,7 @@ export const getMeuPorLivro = async (req, res) => {
   }
 };
 
-// --- listar públicos com capa, título, nota, usuário, frase favorita ---
+// --- listar públicos ---
 export const getFichamentosPublicos = async (req, res) => {
   const { autor, titulo, genero } = req.query;
   try {
@@ -120,7 +141,13 @@ export const getFichamentosPublicos = async (req, res) => {
       SELECT f.id_fichamento, f.introducao, f.frase_favorita, f.nota, f.visibilidade,
              f.data_criacao, f.data_atualizacao,
              u.id_usuario, u.nome AS usuario_nome,
-             l.id_livro, l.titulo, l.autor, l.capa_url
+             l.id_livro, l.titulo, l.autor, l.capa_url,
+             COALESCE((
+               SELECT ARRAY_AGG(g.nome ORDER BY g.nome)
+               FROM livro_genero lg
+               JOIN generos g ON g.id_genero = lg.id_genero
+               WHERE lg.id_livro = l.id_livro
+             ), '{}') AS generos
         FROM fichamentos f
         JOIN livros l ON l.id_livro = f.id_livro
         JOIN usuarios u ON u.id_usuario = f.id_usuario
@@ -162,7 +189,7 @@ export const getFichamentoById = async (req, res) => {
 
   try {
     const { rows } = await pool.query(
-      `SELECT 
+      `SELECT
           f.id_fichamento,
           f.id_usuario,
           f.id_livro,
@@ -183,7 +210,23 @@ export const getFichamentoById = async (req, res) => {
           l.autor,
           l.capa_url,
           l.descricao,
-          u.nome AS usuario_nome
+          u.nome AS usuario_nome,
+          COALESCE(
+            (
+              SELECT ARRAY_AGG(g.nome ORDER BY g.nome)
+              FROM livro_genero lg
+              JOIN generos g ON g.id_genero = lg.id_genero
+              WHERE lg.id_livro = f.id_livro
+            ), '{}'
+          ) AS generos_livro,
+          COALESCE(
+            (
+              SELECT ARRAY_AGG(g.nome ORDER BY g.nome)
+              FROM fichamento_genero fg
+              JOIN generos g ON g.id_genero = fg.id_genero
+              WHERE fg.id_fichamento = f.id_fichamento
+            ), '{}'
+          ) AS generos_fichamento
         FROM fichamentos f
         JOIN livros l ON l.id_livro = f.id_livro
         JOIN usuarios u ON u.id_usuario = f.id_usuario
@@ -196,10 +239,14 @@ export const getFichamentoById = async (req, res) => {
 
     const f = rows[0];
 
-    // Se for privado e não for o dono, bloquear
     if (f.visibilidade !== 'PUBLICO' && f.id_usuario !== me) {
       return res.status(403).json({ error: 'Este fichamento é privado' });
     }
+
+    // Combinar gêneros do livro e do fichamento
+    f.generos = [...new Set([...(f.generos_livro || []), ...(f.generos_fichamento || [])])];
+    delete f.generos_livro;
+    delete f.generos_fichamento;
 
     res.json(f);
   } catch (err) {
@@ -218,9 +265,10 @@ export const deleteFichamento = async (req, res) => {
       `SELECT 1 FROM fichamentos WHERE id_fichamento=$1 AND id_usuario=$2`,
       [id, id_usuario]
     );
-    if (!own.rows.length) return res.status(403).json({ error: 'Você não pode excluir este fichamento' });
+    if (!own.rows.length)
+      return res.status(403).json({ error: 'Você não pode excluir este fichamento' });
 
-    await pool.query(`DELETE FROM favoritos WHERE id_fichamento=$1`, [id]); // limpa favoritos que apontam para ele
+    await pool.query(`DELETE FROM favoritos WHERE id_fichamento=$1`, [id]);
     await pool.query(`DELETE FROM fichamentos WHERE id_fichamento=$1`, [id]);
 
     res.json({ success: true, message: 'Fichamento excluído' });
@@ -229,4 +277,3 @@ export const deleteFichamento = async (req, res) => {
     res.status(500).json({ error: 'Erro ao excluir fichamento' });
   }
 };
-

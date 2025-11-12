@@ -11,6 +11,7 @@ import { verifyToken, isAdmin } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 
+// Usuário comum
 router.get('/', getLivros);
 router.get('/search', searchLivrosGoogle);
 router.get('/:id', getLivroDetalhes);

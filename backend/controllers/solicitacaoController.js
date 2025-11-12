@@ -140,8 +140,6 @@ export const rejeitarSolicitacao = async (req, res) => {
   }
 };
 
-// ... imports e handlers existentes permanecem
-
 // ADMIN: obter detalhes de uma solicitação
 export const detalheSolicitacao = async (req, res) => {
   const { id } = req.params;
