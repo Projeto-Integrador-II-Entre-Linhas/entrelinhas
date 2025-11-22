@@ -2,9 +2,7 @@ import pool from '../db.js';
 import fetch from 'node-fetch';
 import { ensureLivroGeneros } from '../utils/genres.js';
 
-// ==========================================================
 //  Função auxiliar — padroniza campo capa_url
-// ==========================================================
 function capaAlias(row) {
   if (!row) return row;
   if (!row.capa_url || row.capa_url.trim() === '') {
@@ -14,9 +12,7 @@ function capaAlias(row) {
   return row;
 }
 
-// ==========================================================
 //  RF09 — Listar livros com filtros
-// ==========================================================
 export const getLivros = async (req, res) => {
   const { autor, titulo, genero } = req.query;
   let sql = `
@@ -52,9 +48,7 @@ export const getLivros = async (req, res) => {
   }
 };
 
-// ==========================================================
 //  RF12 — Detalhes do livro + fichamentos públicos
-// ==========================================================
 export const getLivroDetalhes = async (req, res) => {
   const { id } = req.params;
   try {
@@ -90,9 +84,7 @@ export const getLivroDetalhes = async (req, res) => {
   }
 };
 
-// ==========================================================
 //  RF06 — Buscar Livro (Google + OpenLibrary por título/ISBN)
-// ==========================================================
 export const searchLivrosGoogle = async (req, res) => {
   const { titulo, isbn } = req.query;
   if ((!titulo || !titulo.trim()) && (!isbn || !isbn.trim())) {
@@ -173,9 +165,7 @@ export const searchLivrosGoogle = async (req, res) => {
   }
 };
 
-// ==========================================================
 //  Funções auxiliares — APIs externas (GoogleBooks / OpenLibrary)
-// ==========================================================
 async function fetchGoogleByISBN(isbn) {
   const r = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${encodeURIComponent(isbn)}`);
   if (!r.ok) return null;
@@ -253,9 +243,7 @@ async function fetchOpenLibraryByISBN(isbn) {
   };
 }
 
-// ==========================================================
 //  RF06 — Adicionar livro automaticamente por ISBN
-// ==========================================================
 export const addLivroByISBN = async (req, res) => {
   const { isbn } = req.body;
   const usuario = req.user;
@@ -311,10 +299,7 @@ export const addLivroByISBN = async (req, res) => {
   }
 };
 
-
-// ==========================================================
 //  ADMIN — Atualizar Livro
-// ==========================================================
 export const adminUpdateLivro = async (req, res) => {
   const { id } = req.params;
   const body = req.body;
@@ -354,9 +339,7 @@ export const adminUpdateLivro = async (req, res) => {
   }
 };
 
-// ==========================================================
 //  ADMIN — Excluir livro
-// ==========================================================
 export const adminDeleteLivro = async (req, res) => {
   const { id } = req.params;
   try {

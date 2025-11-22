@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/api_service.dart';
+import '../config.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -28,7 +29,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _loadMe();
   }
 
-  // Carrega usuário logado
   Future<void> _loadMe() async {
     setState(() => loading = true);
     try {
@@ -38,7 +38,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _nome.text = map['nome'] ?? '';
         _usuario.text = map['usuario'] ?? '';
         _email.text = map['email'] ?? '';
-        _generos.text = (map['generos_preferidos'] as List?)?.join(', ') ?? '';
+        _generos.text = (map['generos_preferidos'] as List?)
+                ?.join(', ') ??
+            '';
         avatarUrl = map['avatar'];
       }
     } catch (e) {
@@ -48,7 +50,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  // Escolher avatar
   Future<void> _pick() async {
     final x = await ImagePicker().pickImage(source: ImageSource.gallery);
     if (x == null) return;
@@ -61,7 +62,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     setState(() => _avatar = f);
   }
 
-  // Salvar alterações
   Future<void> _save() async {
     setState(() => saving = true);
     try {
@@ -98,7 +98,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  // Inativar conta
   Future<void> _inativarConta() async {
     final motivoController = TextEditingController();
     final confirmar = await showDialog<bool>(
@@ -127,8 +126,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (confirmar == true) {
       try {
         final motivo = motivoController.text.trim();
-        final api = ApiService();
-        final resp = await api.put('users/me/status', {'motivo': motivo});
+        final resp =
+            await ApiService().put('users/me/status', {'motivo': motivo});
 
         if (resp.statusCode == 200) {
           _show('Conta inativada.');
@@ -151,8 +150,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       appBar: AppBar(
         title: const Text('Seu Perfil'),
         backgroundColor: Colors.deepPurple.shade700,
-        elevation: 6,
-        shadowColor: Colors.purpleAccent.withOpacity(0.5),
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -170,29 +167,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   children: [
                     GestureDetector(
                       onTap: _pick,
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          CircleAvatar(
-                            radius: 60,
-                            backgroundColor: Colors.white.withOpacity(0.2),
-                            backgroundImage: _avatar != null
-                                ? FileImage(_avatar!)
-                                : (avatarUrl != null
-                                    ? NetworkImage(
-                                        'http://172.16.41.133:3000$avatarUrl')
-                                    : null) as ImageProvider?,
-                            child: _avatar == null && avatarUrl == null
-                                ? const Icon(Icons.camera_alt,
-                                    color: Colors.white70, size: 36)
-                                : null,
-                          ),
-                          if (saving)
-                            const CircularProgressIndicator(color: Colors.white),
-                        ],
+                      child: CircleAvatar(
+                        radius: 60,
+                        backgroundColor: Colors.white.withOpacity(0.2),
+                        backgroundImage: _avatar != null
+                            ? FileImage(_avatar!)
+                            : (avatarUrl != null
+                                ? NetworkImage('${AppConfig.baseUrl}$avatarUrl')
+                                : null) as ImageProvider?,
+                        child: _avatar == null && avatarUrl == null
+                            ? const Icon(Icons.camera_alt,
+                                color: Colors.white70, size: 36)
+                            : null,
                       ),
                     ),
                     const SizedBox(height: 24),
+
                     _buildField(_nome, 'Nome completo'),
                     const SizedBox(height: 12),
                     _buildField(_usuario, 'Nome de usuário'),
@@ -201,40 +191,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     const SizedBox(height: 12),
                     _buildField(_senha, 'Nova senha', obscure: true),
                     const SizedBox(height: 12),
-                    _buildField(_generos,
-                        'Gêneros preferidos (separados por vírgula)'),
+                    _buildField(
+                        _generos, 'Gêneros preferidos (separados por vírgula)'),
+
                     const SizedBox(height: 28),
+
                     saving
                         ? const CircularProgressIndicator(color: Colors.white)
                         : ElevatedButton.icon(
                             onPressed: _save,
                             icon: const Icon(Icons.save),
+                            label: const Text('Salvar alterações'),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.purpleAccent.shade200,
-                              foregroundColor: Colors.black,
                               minimumSize: const Size(double.infinity, 50),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              shadowColor:
-                                  Colors.purpleAccent.withOpacity(0.6),
-                              elevation: 8,
-                            ),
-                            label: const Text(
-                              'Salvar alterações',
-                              style: TextStyle(fontSize: 18),
                             ),
                           ),
+
                     const SizedBox(height: 20),
+
                     OutlinedButton.icon(
                       onPressed: _inativarConta,
                       icon: const Icon(Icons.person_off),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        side: const BorderSide(color: Colors.white70),
-                        minimumSize: const Size(double.infinity, 48),
-                      ),
                       label: const Text('Inativar minha conta'),
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size(double.infinity, 48),
+                        side: const BorderSide(color: Colors.white),
+                        foregroundColor: Colors.white,
+                      ),
                     ),
                   ],
                 ),
@@ -259,10 +243,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         enabledBorder: OutlineInputBorder(
           borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderSide: const BorderSide(color: Colors.white),
           borderRadius: BorderRadius.circular(16),
         ),
       ),

@@ -80,6 +80,44 @@ class _AdminUsuariosScreenState extends State<AdminUsuariosScreen> {
     _load();
   }
 
+  // Excluir usuário
+  Future<void> _excluir(int id) async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (_) {
+        return AlertDialog(
+          title: const Text('Excluir usuário'),
+          content: const Text(
+            'Tem certeza que deseja excluir este usuário? Esta ação não pode ser desfeita.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+              ),
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Excluir'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmar != true) return;
+
+    final r = await api.delete('users/$id');
+
+    _msg(r.statusCode == 200
+        ? 'Usuário excluído com sucesso'
+        : 'Falha ao excluir usuário');
+
+    _load();
+  }
+
   void _msg(String m) =>
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
 
@@ -152,6 +190,7 @@ class _AdminUsuariosScreenState extends State<AdminUsuariosScreen> {
                                 if (v == 'INATIVAR') _status(u['id_usuario'], 'INATIVO');
                                 if (v == 'ADMIN') _perfil(u['id_usuario'], 'ADMIN');
                                 if (v == 'COMUM') _perfil(u['id_usuario'], 'COMUM');
+                                if (v == 'EXCLUIR') _excluir(u['id_usuario']);
                               },
                               itemBuilder: (_) => [
                                 if (!ativo)
@@ -162,6 +201,14 @@ class _AdminUsuariosScreenState extends State<AdminUsuariosScreen> {
                                   const PopupMenuItem(value: 'ADMIN', child: Text('Tornar ADMIN')),
                                 if (admin)
                                   const PopupMenuItem(value: 'COMUM', child: Text('Tornar COMUM')),
+                                
+                                const PopupMenuItem(
+                                  value: 'EXCLUIR',
+                                  child: Text(
+                                    'Excluir',
+                                    style: TextStyle(color: Colors.red),
+                                  ),
+                                ),
                               ],
                             ),
                           ),

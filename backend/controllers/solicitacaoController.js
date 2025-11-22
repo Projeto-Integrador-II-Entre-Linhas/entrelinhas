@@ -1,9 +1,7 @@
 import pool from '../db.js';
 import { ensureLivroGeneros } from '../utils/genres.js';
 
-// ==========================================================
 // USUÁRIO: solicitar novo livro
-// ==========================================================
 export const solicitarLivro = async (req, res) => {
   const id_usuario = req.user.sub;
   const {
@@ -43,9 +41,7 @@ export const solicitarLivro = async (req, res) => {
   }
 };
 
-// ==========================================================
 // USUÁRIO: listar minhas solicitações
-// ==========================================================
 export const minhasSolicitacoes = async (req, res) => {
   const id_usuario = req.user.sub;
   try {
@@ -63,9 +59,7 @@ export const minhasSolicitacoes = async (req, res) => {
   }
 };
 
-// ==========================================================
 // ADMIN: listar solicitações pendentes
-// ==========================================================
 export const listarPendentes = async (_req, res) => {
   try {
     const { rows } = await pool.query(
@@ -82,9 +76,7 @@ export const listarPendentes = async (_req, res) => {
   }
 };
 
-// ==========================================================
 // ADMIN: aprovar solicitação (livro passa a APROVADO)
-// ==========================================================
 export const aprovarSolicitacao = async (req, res) => {
   const { id } = req.params;
   try {
@@ -110,9 +102,7 @@ export const aprovarSolicitacao = async (req, res) => {
   }
 };
 
-// ==========================================================
 // ADMIN: rejeitar solicitação com motivo
-// ==========================================================
 export const rejeitarSolicitacao = async (req, res) => {
   const { id } = req.params;
   const { motivo } = req.body;

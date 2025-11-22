@@ -11,9 +11,7 @@ dotenv.config();
 const SECRET = process.env.JWT_SECRET || 'dev-secret';
 const APP_URL = process.env.APP_URL || 'http://localhost:3000';
 
-// =======================================================
 //  Função auxiliar: transporte de e-mail
-// =======================================================
 async function getTransport() {
   if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
     console.log(`Usando Gmail (${process.env.EMAIL_USER})`);
@@ -36,9 +34,7 @@ async function getTransport() {
   });
 }
 
-// =======================================================
 //  REGISTER - Criação de conta
-// =======================================================
 export const register = async (req, res) => {
   const { nome, usuario, email, senha } = req.body;
   if (!nome || !usuario || !email || !senha) {
@@ -71,9 +67,7 @@ export const register = async (req, res) => {
   }
 };
 
-// =======================================================
 //  LOGIN
-// =======================================================
 export const login = async (req, res) => {
   const { email, senha } = req.body;
   if (!email || !senha) return res.status(400).json({ error: 'Email e senha obrigatórios' });
@@ -105,9 +99,7 @@ export const login = async (req, res) => {
   }
 };
 
-// =======================================================
 //  FORGOT PASSWORD - Envio de link clicável
-// =======================================================
 export const forgotPassword = async (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ error: 'Email é obrigatório' });
@@ -164,9 +156,7 @@ export const forgotPassword = async (req, res) => {
   }
 };
 
-// =======================================================
 //  RESET PASSWORD - Nova senha
-// =======================================================
 export const resetPassword = async (req, res) => {
   const { token, novaSenha } = req.body;
   if (!token || !novaSenha)

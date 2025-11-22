@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../services/dashboard_service.dart';
+import '../config.dart';
 import 'fichamento_detalhes_screen.dart';
 import 'livro_lista_screen.dart';
 import 'livro_cadastro_screen.dart';
@@ -42,16 +43,19 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
     final perfil = auth.user?['perfil'] ?? 'COMUM';
+
     final userDash = data?['user'];
     final avatarPath = (userDash?['avatar'] ?? '') as String;
-    final avatarUrl =
-        avatarPath.isNotEmpty ? 'http://172.16.41.133:3000$avatarPath' : null;
+
+    final avatarUrl = avatarPath.isNotEmpty
+        ? '${AppConfig.baseUrl}$avatarPath'
+        : null;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFD2C9D4),
+      backgroundColor: const Color(0xFFE8DFF1),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF4F3466),
-        elevation: 2,
+        backgroundColor: const Color(0xFF4F2A75),
+        elevation: 4,
         centerTitle: true,
         title: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -62,7 +66,7 @@ class _HomeScreenState extends State<HomeScreen> {
               'Entre Linhas',
               style: TextStyle(
                 color: Colors.white,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ],
@@ -77,11 +81,11 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               child: CircleAvatar(
                 backgroundColor: Colors.white,
-                radius: 16,
+                radius: 18,
                 backgroundImage:
                     avatarUrl != null ? NetworkImage(avatarUrl) : null,
                 child: avatarUrl == null
-                    ? const Icon(Icons.person, color: Color(0xFF4F3466))
+                    ? const Icon(Icons.person, color: Color(0xFF4F2A75))
                     : null,
               ),
             ),
@@ -91,7 +95,7 @@ class _HomeScreenState extends State<HomeScreen> {
       drawer: _buildDrawer(context, auth, perfil, avatarUrl),
       body: loading
           ? const Center(
-              child: CircularProgressIndicator(color: Color(0xFF4F3466)))
+              child: CircularProgressIndicator(color: Color(0xFF4F2A75)))
           : RefreshIndicator(
               onRefresh: _load,
               child: ListView(
@@ -116,7 +120,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: Color(0xFF4F3466),
+                            color: Color(0xFF4F2A75),
                           ),
                         ),
                       ),
@@ -129,7 +133,10 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           );
                         },
-                        child: const Text('Ver todos'),
+                        child: const Text(
+                          'Ver todos',
+                          style: TextStyle(color: Color(0xFF4F2A75)),
+                        ),
                       ),
                     ],
                   ),
@@ -143,7 +150,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
       floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: const Color(0xFF947CAC),
+        backgroundColor: const Color(0xFF8562A5),
         foregroundColor: Colors.white,
         onPressed: () => Navigator.push(
           context,
@@ -162,17 +169,18 @@ class _HomeScreenState extends State<HomeScreen> {
     String? avatarUrl,
   ) {
     final userDash = data?['user'];
+
     return Drawer(
-      backgroundColor: const Color(0xFFF5F2F7),
+      backgroundColor: const Color(0xFFF3EBFA),
       child: Column(
         children: [
           UserAccountsDrawerHeader(
-            decoration: const BoxDecoration(color: Color(0xFF4F3466)),
+            decoration: const BoxDecoration(color: Color(0xFF4F2A75)),
             accountName: Text(
               userDash?['nome'] ?? auth.user?['nome'] ?? 'Usuário',
               style: const TextStyle(
                 color: Colors.white,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w700,
               ),
             ),
             accountEmail: Text(
@@ -184,10 +192,11 @@ class _HomeScreenState extends State<HomeScreen> {
               backgroundImage:
                   avatarUrl != null ? NetworkImage(avatarUrl) : null,
               child: avatarUrl == null
-                  ? const Icon(Icons.person, color: Color(0xFF4F3466))
+                  ? const Icon(Icons.person, color: Color(0xFF4F2A75))
                   : null,
             ),
           ),
+
           _drawerItem(Icons.home, 'Início', () => Navigator.pop(context)),
           _drawerItem(Icons.add_box, 'Cadastrar Livro', () {
             Navigator.push(
@@ -201,39 +210,50 @@ class _HomeScreenState extends State<HomeScreen> {
               MaterialPageRoute(builder: (_) => const LivroListaScreen()),
             );
           }),
+
+          _drawerItem(Icons.public, 'Fichamentos Públicos', () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const FichamentosPublicosScreen(),
+              ),
+            );
+          }),
+
           _drawerItem(Icons.request_page, 'Minhas Solicitações', () {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => const MinhasSolicitacoesScreen(),
-              ),
+                  builder: (_) => const MinhasSolicitacoesScreen()),
             );
           }),
+
           _drawerItem(Icons.person, 'Perfil', () {
             Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const ProfileScreen()),
             );
           }),
+
           if (perfil == 'ADMIN') const Divider(),
+
           if (perfil == 'ADMIN')
             _drawerItem(Icons.admin_panel_settings, 'Admin • Usuários', () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (_) => const AdminUsuariosScreen(),
-                ),
+                MaterialPageRoute(builder: (_) => const AdminUsuariosScreen()),
               );
             }),
+
           if (perfil == 'ADMIN')
             _drawerItem(Icons.fact_check, 'Admin • Solicitações', () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => const AdminSolicitacoesScreen(),
-                ),
+                    builder: (_) => const AdminSolicitacoesScreen()),
               );
             }),
+
           const Spacer(),
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.red),
@@ -246,7 +266,8 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             onTap: () async {
               await auth.logout();
-              Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+              Navigator.pushNamedAndRemoveUntil(
+                  context, '/login', (route) => false);
             },
           ),
         ],
@@ -256,11 +277,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   ListTile _drawerItem(IconData icon, String text, VoidCallback onTap) {
     return ListTile(
-      leading: Icon(icon, color: const Color(0xFF4F3466)),
+      leading: Icon(icon, color: const Color(0xFF4F2A75)),
       title: Text(
         text,
         style: const TextStyle(
-          color: Color(0xFF2E1A3A),
+          color: Color(0xFF3B1F52),
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -273,9 +294,9 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Text(
           title,
           style: const TextStyle(
-            fontSize: 18,
+            fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF4F3466),
+            color: Color(0xFF4F2A75),
           ),
         ),
       );
@@ -289,13 +310,14 @@ class _FavoritosCarousel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (items.isEmpty) {
-      return const Center(child: Text('Nenhum favorito encontrado.'));
+      return const Center(
+          child: Text('Nenhum favorito encontrado.',
+              style: TextStyle(color: Color(0xFF4F2A75))));
     }
     return SizedBox(
       height: 180,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        physics: const PageScrollPhysics(), 
         itemCount: items.length,
         separatorBuilder: (_, __) => const SizedBox(width: 12),
         itemBuilder: (_, i) {
@@ -305,8 +327,7 @@ class _FavoritosCarousel extends StatelessWidget {
               context,
               MaterialPageRoute(
                 builder: (_) => FichamentoDetalhesScreen(
-                  idFichamento: fav['id_fichamento'],
-                ),
+                    idFichamento: fav['id_fichamento']),
               ),
             ),
             child: ClipRRect(
@@ -321,7 +342,7 @@ class _FavoritosCarousel extends StatelessWidget {
                   : Container(
                       width: 120,
                       height: 180,
-                      color: const Color(0xFF947CAC),
+                      color: const Color(0xFF8562A5),
                       child: const Icon(Icons.book, color: Colors.white),
                     ),
             ),
@@ -332,7 +353,7 @@ class _FavoritosCarousel extends StatelessWidget {
   }
 }
 
-// === MEUS FICHAMENTOS CARROSSEL ===
+// === MEUS FICHAMENTOS ===
 class _FichamentosUsuarioCarousel extends StatelessWidget {
   final List items;
   const _FichamentosUsuarioCarousel({required this.items});
@@ -340,25 +361,28 @@ class _FichamentosUsuarioCarousel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (items.isEmpty) {
-      return const Center(child: Text('Você ainda não criou nenhum fichamento.'));
+      return const Center(
+        child: Text(
+          'Você ainda não criou fichamentos.',
+          style: TextStyle(color: Color(0xFF4F2A75)),
+        ),
+      );
     }
+
     return SizedBox(
       height: 220,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        physics: const PageScrollPhysics(),
         itemCount: items.length,
         separatorBuilder: (_, __) => const SizedBox(width: 12),
         itemBuilder: (_, i) {
           final f = items[i];
-          final capa = f['capa_url'] ?? '';
-          final titulo = f['titulo'] ?? '';
-          final nota = f['nota']?.toString() ?? '-';
-          final vis = f['visibilidade'] ?? 'Privado';
+
           return _FichamentoCard(
-            capa: capa,
-            titulo: titulo,
-            subtitulo: 'Nota: $nota • $vis',
+            capa: f['capa_url'] ?? '',
+            titulo: f['titulo'] ?? '',
+            subtitulo:
+                'Nota: ${f['nota']?.toString() ?? '-'} • ${f['visibilidade']}',
             idFichamento: f['id_fichamento'],
           );
         },
@@ -367,7 +391,7 @@ class _FichamentosUsuarioCarousel extends StatelessWidget {
   }
 }
 
-// === FICHAMENTOS PÚBLICOS CARROSSEL ===
+// === FICHAMENTOS PÚBLICOS ===
 class _FichamentosPublicosCarousel extends StatelessWidget {
   final List items;
   const _FichamentosPublicosCarousel({required this.items});
@@ -375,25 +399,28 @@ class _FichamentosPublicosCarousel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (items.isEmpty) {
-      return const Center(child: Text('Nenhum fichamento público disponível.'));
+      return const Center(
+        child: Text(
+          'Nenhum fichamento público encontrado.',
+          style: TextStyle(color: Color(0xFF4F2A75)),
+        ),
+      );
     }
+
     return SizedBox(
       height: 220,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        physics: const PageScrollPhysics(), // 💫 snap scroll
         itemCount: items.length,
         separatorBuilder: (_, __) => const SizedBox(width: 12),
         itemBuilder: (_, i) {
           final f = items[i];
-          final capa = f['capa_url'] ?? '';
-          final titulo = f['titulo'] ?? '';
-          final user = f['usuario'] ?? 'Anônimo';
-          final nota = f['nota']?.toString() ?? '-';
+
           return _FichamentoCard(
-            capa: capa,
-            titulo: titulo,
-            subtitulo: 'Por: $user • Nota: $nota',
+            capa: f['capa_url'] ?? '',
+            titulo: f['titulo'] ?? '',
+            subtitulo:
+                'Por: ${f['usuario'] ?? 'Anônimo'} • Nota: ${f['nota'] ?? '-'}',
             idFichamento: f['id_fichamento'],
           );
         },
@@ -402,7 +429,7 @@ class _FichamentosPublicosCarousel extends StatelessWidget {
   }
 }
 
-// === CARD REUTILIZÁVEL ===
+// === CARD ===
 class _FichamentoCard extends StatelessWidget {
   final String capa;
   final String titulo;
@@ -422,18 +449,19 @@ class _FichamentoCard extends StatelessWidget {
       onTap: () => Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => FichamentoDetalhesScreen(idFichamento: idFichamento),
+          builder: (_) =>
+              FichamentoDetalhesScreen(idFichamento: idFichamento),
         ),
       ),
       child: Container(
         width: 150,
         decoration: BoxDecoration(
-          color: const Color(0xFFCABCD7),
-          borderRadius: BorderRadius.circular(12),
+          color: const Color(0xFFE5D8F2),
+          borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.15),
-              blurRadius: 4,
+              color: Colors.black.withOpacity(0.10),
+              blurRadius: 6,
               offset: const Offset(2, 2),
             ),
           ],
@@ -442,8 +470,7 @@ class _FichamentoCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             ClipRRect(
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(12)),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
               child: capa.isNotEmpty
                   ? Image.network(
                       capa,
@@ -454,11 +481,12 @@ class _FichamentoCard extends StatelessWidget {
                   : Container(
                       width: 150,
                       height: 140,
-                      color: const Color(0xFF947CAC),
-                      child: const Icon(Icons.menu_book,
-                          color: Colors.white, size: 40),
+                      color: const Color(0xFF8562A5),
+                      child:
+                          const Icon(Icons.menu_book, color: Colors.white, size: 40),
                     ),
             ),
+
             Padding(
               padding: const EdgeInsets.all(8),
               child: Column(
@@ -469,18 +497,19 @@ class _FichamentoCard extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF4F3466),
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF4F2A75),
                     ),
                   ),
                   const SizedBox(height: 4),
+
                   Text(
                     subtitulo,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
+                      color: Color(0xFF654A81),
                       fontSize: 12,
-                      color: Color(0xFF5B3765),
                     ),
                   ),
                 ],
@@ -501,15 +530,30 @@ class _SolicitacoesList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (items.isEmpty) {
-      return const Text('Nenhuma solicitação registrada.');
+      return const Text(
+        'Nenhuma solicitação registrada.',
+        style: TextStyle(color: Color(0xFF4F2A75)),
+      );
     }
+
     return Column(
       children: items.map((s) {
-        return ListTile(
-          leading: const Icon(Icons.fact_check, color: Color(0xFF4F3466)),
-          title: Text(s['titulo'] ?? 'Solicitação'),
-          subtitle: Text(
-            'Status: ${s['status']} • Por: ${s['usuario'] ?? 'Usuário desconhecido'}',
+        return Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          decoration: BoxDecoration(
+            color: const Color(0xFFE5D8F2),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: ListTile(
+            leading: const Icon(Icons.fact_check, color: Color(0xFF4F2A75)),
+            title: Text(
+              s['titulo'] ?? 'Solicitação',
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            subtitle: Text(
+              'Status: ${s['status']} • Por: ${s['usuario'] ?? 'Usuário'}',
+              style: const TextStyle(color: Color(0xFF6B5288)),
+            ),
           ),
         );
       }).toList(),

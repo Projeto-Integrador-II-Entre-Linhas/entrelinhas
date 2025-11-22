@@ -1,4 +1,3 @@
-// utils/genres.js
 import pool from '../db.js';
 
 const CANON = [
@@ -33,7 +32,6 @@ export async function ensureLivroGeneros(id_livro, nomes=[]) {
     if (!principal && CANON.includes(gen.nome)) principal = gen.id_genero;
   }
   if (!principal) {
-    // se nada bater com CANON, usa o primeiro
     const { rows } = await pool.query(
       'SELECT id_genero FROM livro_genero WHERE id_livro=$1 LIMIT 1', [id_livro]
     );

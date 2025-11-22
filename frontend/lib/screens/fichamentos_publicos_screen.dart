@@ -14,9 +14,7 @@ class FichamentosPublicosScreen extends StatefulWidget {
 class _FichamentosPublicosScreenState
     extends State<FichamentosPublicosScreen> {
   final ApiService api = ApiService();
-  final _autor = TextEditingController();
-  final _titulo = TextEditingController();
-  final _genero = TextEditingController();
+  final _busca = TextEditingController();
 
   bool loading = false;
   List itens = [];
@@ -30,20 +28,15 @@ class _FichamentosPublicosScreenState
   Future<void> _buscar() async {
     setState(() => loading = true);
     try {
-      final qs = <String>[];
-      if (_autor.text.trim().isNotEmpty) {
-        qs.add('autor=${Uri.encodeQueryComponent(_autor.text.trim())}');
-      }
-      if (_titulo.text.trim().isNotEmpty) {
-        qs.add('titulo=${Uri.encodeQueryComponent(_titulo.text.trim())}');
-      }
-      if (_genero.text.trim().isNotEmpty) {
-        qs.add('genero=${Uri.encodeQueryComponent(_genero.text.trim())}');
-      }
+      final termo = _busca.text.trim();
 
-      final path = qs.isEmpty
-          ? 'fichamentos/publicos'
-          : 'fichamentos/publicos?${qs.join('&')}';
+      String path;
+      if (termo.isEmpty) {
+        path = 'fichamentos/publicos';
+      } else {
+        final q = Uri.encodeQueryComponent(termo);
+        path = 'fichamentos/publicos?q=$q';
+      }
 
       final r = await api.get(path);
       if (r.statusCode == 200 && r.body.isNotEmpty) {
@@ -64,59 +57,29 @@ class _FichamentosPublicosScreenState
       ),
       body: Column(
         children: [
-          // Filtros
           Padding(
             padding: const EdgeInsets.all(12),
-            child: Column(
+            child: Row(
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _titulo,
-                        decoration: const InputDecoration(
-                          labelText: 'Filtrar por título',
-                          border: OutlineInputBorder(),
-                        ),
-                        onSubmitted: (_) => _buscar(),
-                      ),
+                Expanded(
+                  child: TextField(
+                    controller: _busca,
+                    decoration: const InputDecoration(
+                      labelText: 'Buscar por título, autor ou gênero',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.search),
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: TextField(
-                        controller: _autor,
-                        decoration: const InputDecoration(
-                          labelText: 'Filtrar por autor',
-                          border: OutlineInputBorder(),
-                        ),
-                        onSubmitted: (_) => _buscar(),
-                      ),
-                    ),
-                  ],
+                    onSubmitted: (_) => _buscar(),
+                  ),
                 ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _genero,
-                        decoration: const InputDecoration(
-                          labelText: 'Filtrar por gênero',
-                          border: OutlineInputBorder(),
-                        ),
-                        onSubmitted: (_) => _buscar(),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    ElevatedButton.icon(
-                      onPressed: _buscar,
-                      icon: const Icon(Icons.search),
-                      label: const Text('Buscar'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF947CAC),
-                      ),
-                    ),
-                  ],
+                const SizedBox(width: 8),
+                ElevatedButton.icon(
+                  onPressed: _buscar,
+                  icon: const Icon(Icons.search),
+                  label: const Text('Buscar'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF947CAC),
+                  ),
                 ),
               ],
             ),
