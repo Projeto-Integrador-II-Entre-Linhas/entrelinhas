@@ -141,24 +141,24 @@ CREATE TABLE favoritos (
 -- ============================================================
 -- SOLICITAÇÕES DE LIVRO
 -- ============================================================
-
 CREATE TABLE solicitacoes_livros (
     id_solicitacao SERIAL PRIMARY KEY,
     id_usuario INTEGER NOT NULL REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
     id_livro INTEGER REFERENCES livros(id_livro) ON DELETE SET NULL,
 
-    data_solicitacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    data_solicitacao TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    titulo VARCHAR(255),
-    autor VARCHAR(255),
+    titulo VARCHAR(255) NOT NULL,
+    autor VARCHAR(255) NOT NULL,
+    capa_url VARCHAR(500),
     ano_publicacao INTEGER,
-    editora VARCHAR(255),
-    isbn VARCHAR(20),
-    descricao TEXT,
+    editora VARCHAR(255) NOT NULL,
+    isbn VARCHAR(20) NOT NULL,
+    descricao TEXT NOT NULL,
     idioma VARCHAR(50),
-    num_paginas INTEGER,
+    num_paginas INTEGER NOT NULL,
 
-    data_cadastro TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    data_cadastro TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     status status_livro DEFAULT 'PENDENTE',
     motivo_rejeicao TEXT,
     data_resposta TIMESTAMP

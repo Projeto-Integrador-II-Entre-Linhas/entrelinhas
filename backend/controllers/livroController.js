@@ -2,11 +2,11 @@ import pool from '../db.js';
 import fetch from 'node-fetch';
 import { ensureLivroGeneros } from '../utils/genres.js';
 
-//  Função auxiliar — padroniza campo capa_url
+// padroniza campo capa_url
 function capaAlias(row) {
   if (!row) return row;
   if (!row.capa_url || row.capa_url.trim() === '') {
-    // 🔹 Define imagem padrão se a capa estiver vazia
+    //imagem padrão se capa vazia
     row.capa_url = 'https://i.pinimg.com/736x/da/8f/b2/da8fb239479856a78bdd048d038486be.jpg';
   }
   return row;
@@ -165,7 +165,7 @@ export const searchLivrosGoogle = async (req, res) => {
   }
 };
 
-//  Funções auxiliares — APIs externas (GoogleBooks / OpenLibrary)
+//  APIs externas (GoogleBooks / OpenLibrary)
 async function fetchGoogleByISBN(isbn) {
   const r = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${encodeURIComponent(isbn)}`);
   if (!r.ok) return null;

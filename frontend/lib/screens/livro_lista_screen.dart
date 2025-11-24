@@ -11,12 +11,24 @@ class LivroListaScreen extends StatefulWidget {
 
 class _LivroListaScreenState extends State<LivroListaScreen> {
   final LivroService service = LivroService();
+
   List livros = [];
   bool loading = true;
-  String? filtro;
+
   final _controller = TextEditingController();
-  final String _capaPadrao =
-      'https://i.pinimg.com/736x/da/8f/b2/da8fb239479856a78bdd048d038486be.jpg';
+  String? filtroBusca;
+
+  final List<String> generos = [
+    'Todos',
+    'Romance',
+    'Fantasia',
+    'Aventura',
+    'Mistério',
+    'Terror',
+    'Drama',
+  ];
+
+  String generoSelecionado = 'Todos';
 
   @override
   void initState() {
@@ -26,7 +38,10 @@ class _LivroListaScreenState extends State<LivroListaScreen> {
 
   Future<void> carregarLivros() async {
     setState(() => loading = true);
-    final lista = await service.listarLivros(titulo: filtro);
+    final lista = await service.listarLivros(
+      titulo: filtroBusca,
+      genero: generoSelecionado == 'Todos' ? null : generoSelecionado,
+    );
     setState(() {
       livros = lista;
       loading = false;
@@ -34,7 +49,7 @@ class _LivroListaScreenState extends State<LivroListaScreen> {
   }
 
   void _buscarDebounced(String valor) {
-    filtro = valor.trim().isEmpty ? null : valor.trim();
+    filtroBusca = valor.trim().isEmpty ? null : valor.trim();
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted && _controller.text.trim() == valor) {
         carregarLivros();
@@ -44,39 +59,84 @@ class _LivroListaScreenState extends State<LivroListaScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final isLandscape = size.width > size.height;
+
+    // Configurações responsivas
+    final double maxCardWidth = isLandscape ? 200 : 150;
+    final double aspectRatio = isLandscape ? 0.65 : 0.55;
+
     return Scaffold(
       backgroundColor: const Color(0xFFD2C9D4),
+
       appBar: AppBar(
-        title: const Text(
-          'Livros Cadastrados',
-          style: TextStyle(color: Colors.white),
-        ),
         backgroundColor: const Color(0xFF4F3466),
-        iconTheme: const IconThemeData(color: Colors.white),
+        title: const Text(
+          'Livros',
+          style: TextStyle(color: Colors.white, fontSize: 22),
+        ),
+        centerTitle: true,
       ),
+
       body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Campo de busca
+
+          //Barra de Pesquisa
           Padding(
-            padding: const EdgeInsets.all(12),
-            child: TextField(
-              controller: _controller,
-              decoration: InputDecoration(
-                labelText: 'Buscar por título',
-                labelStyle: const TextStyle(color: Color(0xFF4F3466)),
-                prefixIcon: const Icon(Icons.search, color: Color(0xFF4F3466)),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                focusedBorder: const OutlineInputBorder(
-                  borderSide: BorderSide(color: Color(0xFF947CAC)),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
+            child: Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFFCABCD7),
+                borderRadius: BorderRadius.circular(25),
+              ),
+              child: TextField(
+                controller: _controller,
+                onChanged: _buscarDebounced,
+                decoration: const InputDecoration(
+                  hintText: "Pesquisar",
+                  prefixIcon: Icon(Icons.search, color: Color(0xFF4F3466)),
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(vertical: 14),
                 ),
               ),
-              onChanged: _buscarDebounced,
             ),
           ),
 
-          // Lista de livros
+          //Gêneros
+          SizedBox(
+            height: 40,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              itemCount: generos.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemBuilder: (context, i) {
+                final g = generos[i];
+                final ativo = generoSelecionado == g;
+                return ChoiceChip(
+                  label: Text(
+                    g,
+                    style: TextStyle(
+                      color: ativo ? Colors.white : const Color(0xFF4F3466),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  selected: ativo,
+                  selectedColor: const Color(0xFF4F3466),
+                  backgroundColor: const Color(0xFFCABCD7),
+                  onSelected: (_) {
+                    setState(() => generoSelecionado = g);
+                    carregarLivros();
+                  },
+                );
+              },
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
+          //Grid de Livros
           Expanded(
             child: loading
                 ? const Center(
@@ -85,75 +145,51 @@ class _LivroListaScreenState extends State<LivroListaScreen> {
                 : livros.isEmpty
                     ? const Center(
                         child: Text(
-                          'Nenhum livro encontrado.',
-                          style: TextStyle(
-                            color: Color(0xFF4F3466),
-                            fontSize: 16,
-                          ),
+                          "Nenhum livro encontrado.",
+                          style: TextStyle(color: Color(0xFF4F3466), fontSize: 16),
                         ),
                       )
                     : RefreshIndicator(
-                        color: const Color(0xFF4F3466),
                         onRefresh: carregarLivros,
-                        child: ListView.builder(
+                        color: const Color(0xFF4F3466),
+                        child: GridView.builder(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                           itemCount: livros.length,
+                          
+                          gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                            maxCrossAxisExtent: maxCardWidth,
+                            childAspectRatio: aspectRatio,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                          ),
+
                           itemBuilder: (context, index) {
                             final livro = livros[index];
-                            final titulo = livro['titulo'] ?? 'Sem título';
-                            final autor = livro['autor'] ?? 'Autor desconhecido';
-                            final capa = (livro['capa_url']?.toString().isNotEmpty ?? false)
-                                ? livro['capa_url']
-                                : _capaPadrao;
+                            final capa = livro['capa_url'] ?? '';
 
-                            return Card(
-                              color: const Color(0xFFCABCD7),
-                              elevation: 3,
-                              margin: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 6),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                side: const BorderSide(
-                                  color: Color(0xFF947CAC),
-                                  width: 0.8,
-                                ),
-                              ),
-                              child: ListTile(
-                                contentPadding: const EdgeInsets.all(8),
-                                leading: ClipRRect(
-                                  borderRadius: BorderRadius.circular(8),
+                            return GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => LivroDetalhesScreen(livro: livro),
+                                  ),
+                                );
+                              },
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(14),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFCABCD7),
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
                                   child: Image.network(
-                                    capa,
-                                    width: 50,
-                                    height: 70,
+                                    capa.isNotEmpty
+                                        ? capa
+                                        : "https://i.pinimg.com/736x/da/8f/b2/da8fb239479856a78bdd048d038486be.jpg",
                                     fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) =>
-                                        const Icon(Icons.book,
-                                            size: 40, color: Color(0xFF4F3466)),
                                   ),
                                 ),
-                                title: Text(
-                                  titulo,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF4F3466),
-                                  ),
-                                ),
-                                subtitle: Text(
-                                  autor,
-                                  style: const TextStyle(
-                                    color: Color(0xFF5B3765),
-                                    fontSize: 13,
-                                  ),
-                                ),
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) =>
-                                          LivroDetalhesScreen(livro: livro),
-                                    ),
-                                  );
-                                },
                               ),
                             );
                           },
