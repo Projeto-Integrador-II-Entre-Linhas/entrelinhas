@@ -42,7 +42,7 @@ O Entre Linhas é um aplicativo mobile desenvolvido para auxiliar leitores no re
 A aplicação integra Flutter, Dart, Node.js, Express e PostgreSQL, além de consumir as APIs Google Books e Open Library para automação do cadastro de livros. O sistema disponibiliza recursos como criação de fichamentos completos, consulta de fichamentos públicos, gerenciamento de usuários e cadastro manual de livros com validação administrativa.
 </p>
 <p>
-O Entre Linhas pretende tornar o processo de leitura mais organizado, eficiente e motivador, contribuindo para o desenvolvimento do hábito leitor.
+O Entre Linhas pretende tornar o processo de leitura mais organizado, eficiente e motivador, contribuindo para o desenvolvimento do hábito da leitura.
 </p>
 
 <hr>
