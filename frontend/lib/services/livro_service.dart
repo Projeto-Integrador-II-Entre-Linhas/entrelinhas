@@ -5,9 +5,7 @@ import 'api_service.dart';
 class LivroService {
   final ApiService api = ApiService();
 
-  // ----------------------------------------------------------
-  // Listar livros com filtros opcionais
-  // ----------------------------------------------------------
+  // Listar livros com filtros
   Future<List<Map<String, dynamic>>> listarLivros({
     String? autor,
     String? titulo,
@@ -25,9 +23,7 @@ class LivroService {
     return [];
   }
 
-  // ----------------------------------------------------------
   // Cadastrar livro automaticamente via ISBN (Google/OpenLibrary)
-  // ----------------------------------------------------------
   Future<Map<String, dynamic>?> cadastrarPorISBN(String isbn) async {
     final http.Response res = await api.post('livros/isbn', {'isbn': isbn});
     if (res.statusCode == 200 || res.statusCode == 201) {
@@ -42,9 +38,7 @@ class LivroService {
     }
   }
 
-  // ----------------------------------------------------------
   // Detalhes de um livro + fichamentos públicos associados
-  // ----------------------------------------------------------
   Future<Map<String, dynamic>?> getDetalhes(int id) async {
     final http.Response res = await api.get('livros/$id');
     if (res.statusCode == 200 && res.body.isNotEmpty) {
@@ -53,9 +47,7 @@ class LivroService {
     return null;
   }
 
-  // ----------------------------------------------------------
   // Busca de livros via API pública (GoogleBooks / OpenLibrary)
-  // ----------------------------------------------------------
   Future<List<Map<String, dynamic>>> buscarLivrosGoogle({
     String? titulo,
     String? isbn,
@@ -71,25 +63,19 @@ class LivroService {
     return [];
   }
 
-  // ----------------------------------------------------------
   // ADMIN — atualizar um livro existente
-  // ----------------------------------------------------------
   Future<bool> adminUpdateLivro(int id, Map<String, dynamic> body) async {
     final http.Response res = await api.put('livros/$id', body);
     return res.statusCode == 200;
   }
 
-  // ----------------------------------------------------------
   // ADMIN — excluir livro definitivamente
-  // ----------------------------------------------------------
   Future<bool> adminDeleteLivro(int id) async {
     final http.Response res = await api.delete('livros/$id');
     return res.statusCode == 200;
   }
 
-  // ----------------------------------------------------------
   // Usuário comum — solicitar cadastro manual de livro
-  // ----------------------------------------------------------
   Future<void> solicitarLivro(String termo) async {
     await api.post('solicitacoes', {
       'titulo': termo,
