@@ -39,6 +39,7 @@ dependencies:
 
   # Deep Links (para abrir o app via link do e-mail)
   app_links: ^6.1.3
+  shimmer: ^3.0.0
 
 dev_dependencies:
   flutter_test:

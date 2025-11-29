@@ -135,52 +135,55 @@ export const getMeuPorLivro = async (req, res) => {
 
 // --- listar públicos ---
 export const getFichamentosPublicos = async (req, res) => {
-  const { autor, titulo, genero } = req.query;
-  try {
-    let sql = `
-      SELECT f.id_fichamento, f.introducao, f.frase_favorita, f.nota, f.visibilidade,
-             f.data_criacao, f.data_atualizacao,
-             u.id_usuario, u.nome AS usuario_nome,
+  const { autor, titulo, genero, q } = req.query;
+
+  let sql = `
+      SELECT f.id_fichamento, f.introducao, f.frase_favorita, f.nota,
+             u.nome AS usuario_nome, 
              l.id_livro, l.titulo, l.autor, l.capa_url,
-             COALESCE((
-               SELECT ARRAY_AGG(g.nome ORDER BY g.nome)
-               FROM livro_genero lg
-               JOIN generos g ON g.id_genero = lg.id_genero
-               WHERE lg.id_livro = l.id_livro
-             ), '{}') AS generos
-        FROM fichamentos f
-        JOIN livros l ON l.id_livro = f.id_livro
-        JOIN usuarios u ON u.id_usuario = f.id_usuario
-       WHERE f.visibilidade='PUBLICO'`;
-    const params = [];
+             COALESCE(
+                (SELECT ARRAY_AGG(COALESCE(g.nome_pt,g.nome))
+                 FROM livro_genero lg
+                 JOIN generos g ON g.id_genero = lg.id_genero
+                 WHERE lg.id_livro = l.id_livro),
+              '{}') AS generos
+      FROM fichamentos f
+      JOIN livros l ON l.id_livro = f.id_livro
+      JOIN usuarios u ON u.id_usuario = f.id_usuario
+      WHERE f.visibilidade='PUBLICO'
+  `;
 
-    if (autor) {
-      params.push(`%${autor}%`);
-      sql += ` AND l.autor ILIKE $${params.length}`;
-    }
-    if (titulo) {
-      params.push(`%${titulo}%`);
-      sql += ` AND l.titulo ILIKE $${params.length}`;
-    }
-    if (genero) {
-      params.push(`%${genero}%`);
-      sql += ` AND l.id_livro IN (
-                 SELECT lg.id_livro
-                   FROM livro_genero lg
-                   JOIN generos g ON g.id_genero = lg.id_genero
-                  WHERE g.nome ILIKE $${params.length}
-               )`;
-    }
+  const params = [];
 
-    sql += ` ORDER BY f.data_atualizacao DESC NULLS LAST, f.data_criacao DESC`;
+  if (q || titulo || autor) {
+    const termo = q ?? titulo ?? autor;
+    params.push(`%${termo}%`);
+    sql += ` AND (l.titulo ILIKE $${params.length} OR l.autor ILIKE $${params.length})`;
+  }
 
-    const { rows } = await pool.query(sql, params);
+  if (genero) {
+    const list = genero.split(",").map(s => s.trim());
+    const ph = list.map((_,i)=>`$${params.length+i+1}`).join(",");
+    sql += `
+      AND l.id_livro IN (
+        SELECT lg.id_livro FROM livro_genero lg
+        JOIN generos g ON g.id_genero = lg.id_genero
+        WHERE COALESCE(g.nome_pt,g.nome) IN (${ph})
+      )`;
+    params.push(...list);
+  }
+
+  sql+=` ORDER BY f.data_atualizacao DESC NULLS LAST, f.data_criacao DESC`;
+
+  try{
+    const {rows}=await pool.query(sql,params);
     res.json(rows);
-  } catch (err) {
-    console.error('PUBLICOS:', err);
-    res.status(500).json({ error: 'Erro ao buscar fichamentos públicos' });
+  }catch(e){
+    console.error("ERRO PUBLICOS:",e);
+    res.status(500).json({error:"Falha ao buscar fichamentos"});
   }
 };
+
 
 // --- detalhe de um fichamento (público ou do próprio usuário) ---
 export const getFichamentoById = async (req, res) => {
@@ -190,43 +193,29 @@ export const getFichamentoById = async (req, res) => {
   try {
     const { rows } = await pool.query(
       `SELECT
-          f.id_fichamento,
-          f.id_usuario,
-          f.id_livro,
-          f.introducao,
-          f.espaco,
-          f.personagens,
-          f.narrativa,
-          f.conclusao,
-          f.visibilidade,
-          f.data_inicio,
-          f.data_fim,
-          f.formato,
-          f.frase_favorita,
-          f.nota,
-          f.data_criacao,
-          f.data_atualizacao,
-          l.titulo,
-          l.autor,
-          l.capa_url,
-          l.descricao,
+          f.id_fichamento, f.id_usuario, f.id_livro,
+          f.introducao, f.espaco, f.personagens, f.narrativa, f.conclusao,
+          f.visibilidade, f.data_inicio, f.data_fim, f.formato,
+          f.frase_favorita, f.nota, f.data_criacao, f.data_atualizacao,
+          l.titulo, l.autor, l.capa_url, l.descricao,
           u.nome AS usuario_nome,
+
+          /* gêneros do LIVRO -> traduzido */
           COALESCE(
-            (
-              SELECT ARRAY_AGG(g.nome ORDER BY g.nome)
-              FROM livro_genero lg
-              JOIN generos g ON g.id_genero = lg.id_genero
-              WHERE lg.id_livro = f.id_livro
-            ), '{}'
-          ) AS generos_livro,
+            (SELECT ARRAY_AGG(COALESCE(g.nome_pt,g.nome) ORDER BY COALESCE(g.nome_pt,g.nome))
+             FROM livro_genero lg
+             JOIN generos g ON g.id_genero = lg.id_genero
+             WHERE lg.id_livro = f.id_livro),
+          '{}') AS generos_livro,
+
+          /* gêneros ADICIONADOS no fichamento -> traduzido */
           COALESCE(
-            (
-              SELECT ARRAY_AGG(g.nome ORDER BY g.nome)
-              FROM fichamento_genero fg
-              JOIN generos g ON g.id_genero = fg.id_genero
-              WHERE fg.id_fichamento = f.id_fichamento
-            ), '{}'
-          ) AS generos_fichamento
+            (SELECT ARRAY_AGG(COALESCE(g.nome_pt,g.nome) ORDER BY COALESCE(g.nome_pt,g.nome))
+             FROM fichamento_genero fg
+             JOIN generos g ON g.id_genero = fg.id_genero
+             WHERE fg.id_fichamento = f.id_fichamento),
+          '{}') AS generos_fichamento
+
         FROM fichamentos f
         JOIN livros l ON l.id_livro = f.id_livro
         JOIN usuarios u ON u.id_usuario = f.id_usuario
@@ -234,8 +223,7 @@ export const getFichamentoById = async (req, res) => {
       [id]
     );
 
-    if (rows.length === 0)
-      return res.status(404).json({ error: 'Fichamento não encontrado' });
+    if (!rows.length) return res.status(404).json({ error: 'Fichamento não encontrado' });
 
     const f = rows[0];
 
@@ -243,17 +231,18 @@ export const getFichamentoById = async (req, res) => {
       return res.status(403).json({ error: 'Este fichamento é privado' });
     }
 
-    // Combinar gêneros do livro e do fichamento
-    f.generos = [...new Set([...(f.generos_livro || []), ...(f.generos_fichamento || [])])];
+    f.generos = [...new Set([...f.generos_livro, ...f.generos_fichamento])];
     delete f.generos_livro;
     delete f.generos_fichamento;
 
     res.json(f);
+
   } catch (err) {
     console.error('DETALHE FICHAMENTO:', err);
     res.status(500).json({ error: 'Erro ao buscar fichamento' });
   }
 };
+
 
 // --- excluir o próprio fichamento ---
 export const deleteFichamento = async (req, res) => {
@@ -275,5 +264,20 @@ export const deleteFichamento = async (req, res) => {
   } catch (err) {
     console.error('DELETE FICHAMENTO:', err);
     res.status(500).json({ error: 'Erro ao excluir fichamento' });
+  }
+};
+
+export const getGeneros = async (req, res) => {
+  try {
+    const { rows } = await pool.query(`
+      SELECT id_genero, nome, nome_pt
+      FROM generos
+      ORDER BY nome_pt ASC NULLS LAST
+    `);
+    
+    res.json(rows);
+  } catch (err) {
+    console.error("Erro ao carregar gêneros:", err);
+    res.status(500).json({ error: "Erro ao carregar lista de gêneros" });
   }
 };

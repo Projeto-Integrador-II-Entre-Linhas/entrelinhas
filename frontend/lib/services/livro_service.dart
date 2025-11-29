@@ -82,4 +82,11 @@ class LivroService {
       'autor': 'Desconhecido',
     });
   }
+
+  Future<List> buscarGeneros() async {
+    final res = await api.get('livros/generos');
+    if (res.statusCode == 200) return jsonDecode(res.body);
+    return [];
+  }
+
 }
