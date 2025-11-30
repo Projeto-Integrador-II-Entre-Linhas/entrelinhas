@@ -31,7 +31,7 @@ dependencies:
   barcode_scan2: ^4.2.0
   image_picker: ^0.8.7+4
 
-  # Fontes e design (tema roxo e dourado)
+  # Fontes e design
   google_fonts: ^4.0.3
 
   # Internacionalização (datas, formatos)
@@ -52,7 +52,26 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
-  # Assets (imagens, fontes)
   assets:
     - assets/images/
     - assets/icons/
+
+  fonts:
+    - family: Poppins
+      fonts:
+        - asset: assets/fonts/Poppins/Poppins-Regular.ttf
+        - asset: assets/fonts/Poppins/Poppins-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Poppins/Poppins-Italic.ttf
+          style: italic
+        - asset: assets/fonts/Poppins/Poppins-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Poppins/Poppins-Light.ttf
+          weight: 300
+
+    - family: Roboto
+      fonts:
+        - asset: assets/fonts/Roboto/Roboto-VariableFont_wdth,wght.ttf
+          weight: 400
+        - asset: assets/fonts/Roboto/Roboto-Italic-VariableFont_wdth,wght.ttf
+          style: italic
