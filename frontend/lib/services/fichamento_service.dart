@@ -87,4 +87,11 @@ class FichamentoService {
     final res = await api.delete('fichamentos/$idFichamento');
     return res.statusCode == 200;
   }
+
+  Future<List> buscarGeneros() async {
+    final res = await api.get('fichamentos/generos');
+    if (res.statusCode == 200) return jsonDecode(res.body);
+    return [];
+  }
+
 }

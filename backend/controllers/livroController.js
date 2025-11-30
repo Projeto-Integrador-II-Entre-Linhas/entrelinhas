@@ -15,6 +15,7 @@ function capaAlias(row) {
 //  RF09 — Listar livros com filtros
 export const getLivros = async (req, res) => {
   const { autor, titulo, genero } = req.query;
+
   let sql = `
     SELECT DISTINCT l.*
       FROM livros l
@@ -22,22 +23,30 @@ export const getLivros = async (req, res) => {
       LEFT JOIN generos g ON g.id_genero = lg.id_genero
      WHERE l.status = 'APROVADO'
   `;
+
   const params = [];
 
+  // filtro autor
   if (autor) {
     params.push(`%${autor}%`);
-    sql += ` AND l.autor ILIKE $${params.length}`;
-  }
-  if (titulo) {
-    params.push(`%${titulo}%`);
-    sql += ` AND l.titulo ILIKE $${params.length}`;
-  }
-  if (genero) {
-    params.push(`%${genero}%`);
-    sql += ` AND g.nome ILIKE $${params.length}`;
+    sql += ` AND (l.autor ILIKE $${params.length} OR l.titulo ILIKE $${params.length})`;
   }
 
-  sql += ' ORDER BY l.titulo ASC';
+  // filtro título
+  if (titulo) {
+    params.push(`%${titulo}%`);
+    sql += ` AND (l.titulo ILIKE $${params.length} OR l.autor ILIKE $${params.length})`;
+  }
+
+  if (genero) {
+    const generosArray = genero.split(",").map(g => g.trim());
+    const placeholders = generosArray.map((_, i) => `$${params.length + i + 1}`).join(",");
+
+    sql += ` AND (g.nome_pt IN (${placeholders}) OR g.nome IN (${placeholders}))`;
+    params.push(...generosArray);
+  }
+
+  sql += ` ORDER BY l.titulo ASC`;
 
   try {
     const { rows } = await pool.query(sql, params);
@@ -57,9 +66,11 @@ export const getLivroDetalhes = async (req, res) => {
       return res.status(404).json({ error: 'Livro não encontrado.' });
 
     const generos = await pool.query(
-      `SELECT g.nome FROM generos g
+      `SELECT COALESCE(g.nome_pt, g.nome) AS genero
+         FROM generos g
          JOIN livro_genero lg ON lg.id_genero = g.id_genero
-        WHERE lg.id_livro = $1`,
+        WHERE lg.id_livro = $1
+        ORDER BY g.nome_pt ASC NULLS LAST`,
       [id]
     );
 
@@ -75,7 +86,7 @@ export const getLivroDetalhes = async (req, res) => {
     );
 
     res.json({
-      livro: { ...capaAlias(livro.rows[0]), generos: generos.rows.map(g => g.nome) },
+      livro: { ...capaAlias(livro.rows[0]), generos: generos.rows.map(g => g.genero) },
       fichamentos: fichamentos.rows,
     });
   } catch (err) {
@@ -83,6 +94,7 @@ export const getLivroDetalhes = async (req, res) => {
     res.status(500).json({ error: 'Erro ao buscar detalhes do livro.' });
   }
 };
+
 
 //  RF06 — Buscar Livro (Google + OpenLibrary por título/ISBN)
 export const searchLivrosGoogle = async (req, res) => {
@@ -105,7 +117,7 @@ export const searchLivrosGoogle = async (req, res) => {
           const isbnId =
             ids.find(i => i.type === 'ISBN_13')?.identifier ||
             ids.find(i => i.type === 'ISBN_10')?.identifier;
-          if (!isbnId) return null; // ⚠️ Ignora livros sem ISBN
+          if (!isbnId) return null;
 
           return {
             titulo: info.title || 'Título desconhecido',
@@ -123,12 +135,12 @@ export const searchLivrosGoogle = async (req, res) => {
 
     if (out.length) return res.json(out);
 
-    // Busca alternativa OpenLibrary (também só com ISBN válido)
+    // Busca alternativa OpenLibrary (só com ISBN válido)
     if (isbn) {
       const or = await fetch(`https://openlibrary.org/isbn/${encodeURIComponent(isbn)}.json`);
       if (or.ok) {
         const data = await or.json();
-        if (!data?.isbn_10 && !data?.isbn_13) return res.json([]); // ⚠️ ignora sem ISBN
+        if (!data?.isbn_10 && !data?.isbn_13) return res.json([]);
 
         const cover = data.covers?.length
           ? `https://covers.openlibrary.org/b/id/${data.covers[0]}-L.jpg`
@@ -348,5 +360,20 @@ export const adminDeleteLivro = async (req, res) => {
   } catch (err) {
     console.error('adminDeleteLivro:', err);
     res.status(500).json({ error: 'Erro ao excluir livro.' });
+  }
+};
+
+export const getGeneros = async (req, res) => {
+  try {
+    const { rows } = await pool.query(`
+      SELECT id_genero, nome, nome_pt
+      FROM generos
+      ORDER BY nome_pt ASC NULLS LAST
+    `);
+    
+    res.json(rows);
+  } catch (err) {
+    console.error("Erro ao carregar gêneros:", err);
+    res.status(500).json({ error: "Erro ao carregar lista de gêneros" });
   }
 };

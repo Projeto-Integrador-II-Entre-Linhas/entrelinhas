@@ -5,7 +5,8 @@ import {
   searchLivrosGoogle,
   getLivroDetalhes,
   adminUpdateLivro,
-  adminDeleteLivro
+  adminDeleteLivro,
+  getGeneros
 } from '../controllers/livroController.js';
 import { verifyToken, isAdmin } from '../middlewares/authMiddleware.js';
 
@@ -14,6 +15,7 @@ const router = express.Router();
 // Usuário comum
 router.get('/', getLivros);
 router.get('/search', searchLivrosGoogle);
+router.get('/generos', getGeneros);
 router.get('/:id', getLivroDetalhes);
 router.post('/isbn', verifyToken, addLivroByISBN);
 

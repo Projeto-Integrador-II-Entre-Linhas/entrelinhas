@@ -5,28 +5,33 @@ import {
   getFichamentosPublicos,
   getFichamentoById,
   getMeuPorLivro,
-  deleteFichamento
+  deleteFichamento,
+  getGeneros
 } from '../controllers/fichamentoController.js';
+
 import { verifyToken, optionalAuth } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 
-// Públicos (com filtros)
+//Listar gêneros para filtros
+router.get('/generos', getGeneros);
+
+//Públicos + filtragem por título/autor
 router.get('/publicos', getFichamentosPublicos);
 
-// Meus fichamentos
+//Meus fichamentos
 router.get('/me', verifyToken, getMyFichamentos);
 
-// Meu fichamento por livro (para edição)
+//Fichamento do usuário por livro (para edição)
 router.get('/me/:idLivro', verifyToken, getMeuPorLivro);
 
-// Detalhe por ID (público ou do próprio usuário)
+//Abrir detalhes (público ou do dono)
 router.get('/:id', optionalAuth, getFichamentoById);
 
-// Criar/editar
+//Criar/editar fichamento
 router.post('/', verifyToken, upsertFichamento);
 
-// Excluir o próprio fichamento
+//Excluir fichamento
 router.delete('/:id', verifyToken, deleteFichamento);
 
 export default router;

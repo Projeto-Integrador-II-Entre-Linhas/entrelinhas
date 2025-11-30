@@ -7,8 +7,12 @@ class AppConfig {
   static const String emulatorBaseUrl = 'http://10.0.2.2:3000';
 
   /// IP da sua rede local
+<<<<<<< HEAD
   /// 'http://192.168.100.12:3000
   static const String localBaseUrl = 'http://192.168.15.43:3000';
+=======
+  static const String localBaseUrl = 'http://192.168.100.12:3000';
+>>>>>>> bc971e9dd2883188493077673eb3870c9d59f1fb
 
   /// URL final usada pela API
   static String get baseUrl {
