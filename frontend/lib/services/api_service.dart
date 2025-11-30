@@ -13,6 +13,10 @@ class ApiService {
   //API URL
   static String API_BASE_URL = '${AppConfig.baseUrl}/api';
 
+  ApiService() {
+  print("🔥 API_BASE_URL = $API_BASE_URL");
+  }
+
   Uri _uri(String endpoint) => Uri.parse(
         endpoint.startsWith('/')
             ? '$API_BASE_URL$endpoint'
