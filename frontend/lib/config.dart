@@ -8,7 +8,7 @@ class AppConfig {
 
   /// IP da sua rede local
   /// 'http://192.168.100.12:3000
-  static const String localBaseUrl = 'http://172.16.40.92:3000';
+  static const String localBaseUrl = 'http://192.168.15.43:3000';
 
   /// URL final usada pela API
   static String get baseUrl {

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:app_links/app_links.dart';
 import 'providers/auth_provider.dart';
 import 'theme.dart';
 import 'screens/login_screen.dart';
@@ -24,42 +23,6 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  late final AppLinks _appLinks;
-  String? _deepLinkToken;
-
-  @override
-  void initState() {
-    super.initState();
-    _appLinks = AppLinks();
-    _initDeepLinks();
-  }
-
-  void _initDeepLinks() async {
-    try {
-      final initialUri = await _appLinks.getInitialLink();
-      if (initialUri != null) _handleUri(initialUri);
-
-      _appLinks.uriLinkStream.listen((uri) {
-        _handleUri(uri);
-      });
-    } catch (e) {
-      debugPrint('Erro ao processar deep link: $e');
-    }
-  }
-
-  void _handleUri(Uri uri) {
-    if (uri.scheme == 'entrelinhas' && uri.host == 'reset-password') {
-      final token = uri.pathSegments.isNotEmpty ? uri.pathSegments.first : '';
-      if (token.isNotEmpty) {
-        setState(() => _deepLinkToken = token);
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => ResetPasswordScreen(token: token),
-          ),
-        );
-      }
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -70,15 +33,36 @@ class _MyAppState extends State<MyApp> {
           return MaterialApp(
             title: 'EntreLinhas',
             theme: AppTheme.lightTheme,
-            home: _deepLinkToken != null
-                ? ResetPasswordScreen(token: _deepLinkToken!)
-                : auth.isAuthenticated
-                    ? const HomeScreen()
-                    : const LoginScreen(),
-            routes: {
-              '/home': (_) => const HomeScreen(),
-              '/login': (_) => const LoginScreen(),
+
+            // rota do navegador
+            onGenerateRoute: (settings) {
+              final uri = Uri.parse(settings.name ?? '');
+
+              // rota web: http://localhost:57716/#/reset-password/TOKEN
+              if (uri.pathSegments.isNotEmpty &&
+                  uri.pathSegments.first == 'reset-password') {
+                
+                final token = uri.pathSegments.length > 1 ? uri.pathSegments[1] : '';
+
+                return MaterialPageRoute(
+                  builder: (_) => ResetPasswordScreen(token: token),
+                );
+              }
+
+              // Rotas normais
+              if (settings.name == '/home') {
+                return MaterialPageRoute(builder: (_) => const HomeScreen());
+              }
+              if (settings.name == '/login') {
+                return MaterialPageRoute(builder: (_) => const LoginScreen());
+              }
+
+              return null; 
             },
+
+            home: auth.isAuthenticated
+                ? const HomeScreen()
+                : const LoginScreen(),
           );
         },
       ),
