@@ -9,7 +9,7 @@ import nodemailer from 'nodemailer';
 dotenv.config();
 
 const SECRET = process.env.JWT_SECRET || 'dev-secret';
-const APP_URL = process.env.APP_URL || 'http://localhost:3000';
+const APP_URL = process.env.APP_URL || 'http://localhost:53878';
 
 //  Função auxiliar: transporte de e-mail
 async function getTransport() {
@@ -117,36 +117,28 @@ export const forgotPassword = async (req, res) => {
 
     const transporter = await getTransport();
 
-    // Deep link e link web
-    const appLink = `entrelinhas://reset-password/${token}`;
-    const webLink = `${APP_URL}/reset-password/${token}`;
+    // link web
+    const webLink = `${APP_URL}/#/reset-password/${token}`;
 
     await transporter.sendMail({
       from: process.env.EMAIL_USER || 'no-reply@entrelinhas.dev',
       to: email,
       subject: 'Redefinição de senha - EntreLinhas',
-      text: `Olá!\n\nVocê solicitou a redefinição de senha no EntreLinhas.\n\nUse um dos links abaixo (válido por 1h):\n\nAbrir no app: ${appLink}\nAbrir no navegador: ${webLink}\n\nSe você não solicitou, ignore este e-mail.`,
       html: `
         <p>Olá!</p>
         <p>Você solicitou a redefinição de senha no <b>EntreLinhas</b>.</p>
-        <p><b>Use um dos links abaixo (válido por 1h):</b></p>
-        <p>
-          <a href="entrelinhas://reset-password/${token}" 
-             style="color:#6A1B9A;text-decoration:none;font-weight:bold;">
-             Abrir no aplicativo EntreLinhas
-          </a>
+
+        <p><b>Clique no link abaixo (válido por 1h):</b></p>
+
+        <p style="word-break: break-all;">
+          <a href="${webLink}">${webLink}</a>
         </p>
-        <p>Ou abra no navegador:<br>
-          <a href="${webLink}" style="color:#F9A825;text-decoration:none;">
-            ${webLink}
-          </a>
-        </p>
+
         <p>Se você não solicitou, ignore este e-mail.</p>
       `,
     });
 
     console.log('E-mail de redefinição enviado para', email);
-    console.log('Link app:', appLink);
     console.log('Link web:', webLink);
 
     res.json({ success: true, message: 'Link de redefinição enviado por e-mail' });
@@ -164,9 +156,15 @@ export const resetPassword = async (req, res) => {
 
   try {
     const userRes = await pool.query(
-      'SELECT id_usuario FROM usuarios WHERE token_recuperacao=$1 AND expira_token > NOW()',
+      `
+      SELECT id_usuario 
+      FROM usuarios 
+      WHERE token_recuperacao=$1 
+        AND expira_token > (NOW() AT TIME ZONE 'America/Sao_Paulo')
+      `,
       [token]
     );
+
     if (userRes.rows.length === 0)
       return res.status(400).json({ error: 'Token inválido ou expirado' });
 
@@ -182,3 +180,4 @@ export const resetPassword = async (req, res) => {
     res.status(500).json({ error: 'Erro ao redefinir senha' });
   }
 };
+
