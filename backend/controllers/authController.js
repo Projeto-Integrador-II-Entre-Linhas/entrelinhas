@@ -99,17 +99,19 @@ export const login = async (req, res) => {
   }
 };
 
-//  FORGOT PASSWORD - Envio de link clicável
+//  FORGOT PASSWORD 
 export const forgotPassword = async (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ error: 'Email é obrigatório' });
 
   try {
     const u = await pool.query('SELECT id_usuario FROM usuarios WHERE email=$1', [email]);
-    if (u.rows.length === 0) return res.status(404).json({ error: 'Usuário não encontrado' });
+    if (u.rows.length === 0)
+      return res.status(404).json({ error: 'Usuário não encontrado' });
 
     const token = crypto.randomBytes(20).toString('hex');
-    const expire = new Date(Date.now() + 3600 * 1000); // 1h
+    const expire = new Date(Date.now() + 3600 * 1000);
+
     await pool.query(
       'UPDATE usuarios SET token_recuperacao=$1, expira_token=$2 WHERE email=$3',
       [token, expire, email]
@@ -117,8 +119,8 @@ export const forgotPassword = async (req, res) => {
 
     const transporter = await getTransport();
 
-    // link web
-    const webLink = `${APP_URL}/#/reset-password/${token}`;
+    const appRedirectLink = `entrelinhas://app/reset-password/${token}`;
+    const backendLink = `http://192.168.100.12:3000/open/reset/${token}`;
 
     await transporter.sendMail({
       from: process.env.EMAIL_USER || 'no-reply@entrelinhas.dev',
@@ -131,22 +133,24 @@ export const forgotPassword = async (req, res) => {
         <p><b>Clique no link abaixo (válido por 1h):</b></p>
 
         <p style="word-break: break-all;">
-          <a href="${webLink}">${webLink}</a>
+          <a href="${backendLink}">${backendLink}</a>
         </p>
 
         <p>Se você não solicitou, ignore este e-mail.</p>
       `,
     });
 
-    console.log('E-mail de redefinição enviado para', email);
-    console.log('Link web:', webLink);
+    console.log('E-mail enviado para', email);
+    console.log('Backend link:', backendLink);
+    console.log('App deep link:', appRedirectLink);
 
-    res.json({ success: true, message: 'Link de redefinição enviado por e-mail' });
+    res.json({ success: true, message: 'Link enviado!' });
   } catch (err) {
     console.error('FORGOT ERROR:', err);
-    res.status(500).json({ error: 'Erro ao gerar link de redefinição' });
+    res.status(500).json({ error: 'Erro ao gerar link' });
   }
 };
+
 
 //  RESET PASSWORD - Nova senha
 export const resetPassword = async (req, res) => {

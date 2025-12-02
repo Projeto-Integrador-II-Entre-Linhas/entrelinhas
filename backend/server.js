@@ -10,6 +10,7 @@ import fichamentoRoutes from './routes/fichamentos.js';
 import favoritoRoutes from './routes/favoritos.js';
 import solicitacaoRoutes from './routes/solicitacoes.js';
 import dashboardRoutes from './routes/dashboard.js';
+import resetLink from "./routes/resetLink.js";
 
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -39,6 +40,8 @@ app.use('/api/fichamentos', fichamentoRoutes);
 app.use('/api/favoritos', favoritoRoutes);
 app.use('/api/solicitacoes', solicitacaoRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use("/open", resetLink);
+
 
 // Servir arquivos estáticos do Flutter Web
 app.use(express.static(path.join(__dirname, 'public')));

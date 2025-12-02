@@ -20,7 +20,7 @@
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize">
 
-            <!-- Tema inicial enquanto o Flutter carrega -->
+            <!-- Tema enquanto o Flutter carrega -->
             <meta-data
                 android:name="io.flutter.embedding.android.NormalTheme"
                 android:resource="@style/NormalTheme" />
@@ -29,6 +29,20 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!-- DEEP LINK PARA RESET DE SENHA -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <!-- esquema entrelinhas:// -->
+                <data
+                    android:scheme="entrelinhas"
+                    android:host="app"
+                    android:pathPrefix="/reset-password" />
             </intent-filter>
 
         </activity>
