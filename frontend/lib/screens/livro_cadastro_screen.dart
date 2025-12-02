@@ -40,21 +40,28 @@ class _LivroCadastroScreenState extends State<LivroCadastroScreen> {
       }
 
       if (livros.isEmpty) {
+        if (!mounted) return;
         _mostrarSolicitacao(termo);
         return;
       }
 
+      if (!mounted) return;
       setState(() => resultados = livros);
     } catch (e) {
+      if (!mounted) return;
       _mostrarSolicitacao(termo);
-    } finally {
-      setState(() => loading = false);
+    }
+    finally {
+      if (mounted) {
+        setState(() => loading = false);
+      }
     }
   }
 
   Future<void> scan() async {
     final result = await BarcodeScanner.scan();
     if (result.rawContent.isNotEmpty) {
+      if (!mounted) return;
       setState(() => _buscaController.text = result.rawContent);
       await buscar();
     }
@@ -73,9 +80,12 @@ class _LivroCadastroScreenState extends State<LivroCadastroScreen> {
 
     try {
       final response = await service.api.post('livros/isbn', {'isbn': isbn});
+
+      if (!mounted) return;
       setState(() => loading = false);
 
       if (response.statusCode == 201) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Livro cadastrado com sucesso!'),
@@ -83,14 +93,15 @@ class _LivroCadastroScreenState extends State<LivroCadastroScreen> {
           ),
         );
 
-        // Redireciona para a lista de livros
         Future.delayed(const Duration(seconds: 1), () {
+          if (!mounted) return;
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (_) => const LivroListaScreen()),
           );
         });
       } else if (response.statusCode == 200) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Este livro já está cadastrado.'),
@@ -98,6 +109,7 @@ class _LivroCadastroScreenState extends State<LivroCadastroScreen> {
           ),
         );
       } else {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Erro ao cadastrar livro (${response.statusCode}).'),
@@ -106,7 +118,9 @@ class _LivroCadastroScreenState extends State<LivroCadastroScreen> {
         );
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() => loading = false);
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Erro inesperado: $e'),
@@ -117,13 +131,12 @@ class _LivroCadastroScreenState extends State<LivroCadastroScreen> {
   }
 
   void _mostrarSolicitacao(String termo) {
-    final isISBN = RegExp(r'^\d{9,13}$').hasMatch(termo);
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => SolicitacaoFormScreen(
           termo: termo,
-          isISBN: isISBN,
+          isISBN: RegExp(r'^\d{9,13}$').hasMatch(termo),
         ),
       ),
     );
@@ -178,8 +191,7 @@ class _LivroCadastroScreenState extends State<LivroCadastroScreen> {
               ),
             ]),
             const SizedBox(height: 16),
-            if (loading)
-              const LinearProgressIndicator(color: Color(0xFF4F3466)),
+            if (loading) const LinearProgressIndicator(color: Color(0xFF4F3466)),
             const SizedBox(height: 8),
 
             // Resultado
@@ -204,8 +216,7 @@ class _LivroCadastroScreenState extends State<LivroCadastroScreen> {
                               : livro['autores'] ?? 'Autor desconhecido';
 
                           final capa =
-                              (livro['capa_url']?.toString().isNotEmpty ??
-                                      false)
+                              (livro['capa_url']?.toString().isNotEmpty ?? false)
                                   ? livro['capa_url']
                                   : (livro['capaUrl']?.toString().isNotEmpty ??
                                           false)

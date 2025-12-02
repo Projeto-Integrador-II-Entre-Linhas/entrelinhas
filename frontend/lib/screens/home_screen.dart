@@ -264,10 +264,17 @@ class _HomeScreenState extends State<HomeScreen> {
                 fontWeight: FontWeight.bold,
               ),
             ),
+
             onTap: () async {
               await auth.logout();
+
+              if (!mounted) return;
+
               Navigator.pushNamedAndRemoveUntil(
-                  context, '/login', (route) => false);
+                context,
+                '/login',
+                (route) => false,
+              );
             },
           ),
         ],
@@ -460,7 +467,7 @@ class _FichamentoCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.10),
+              color: Colors.black.withValues(alpha: 0.10),
               blurRadius: 6,
               offset: const Offset(2, 2),
             ),

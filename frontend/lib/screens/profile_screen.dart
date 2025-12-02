@@ -169,7 +169,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       onTap: _pick,
                       child: CircleAvatar(
                         radius: 60,
-                        backgroundColor: Colors.white.withOpacity(0.2),
+                        backgroundColor:Colors.white.withValues(alpha: 0.2),
                         backgroundImage: _avatar != null
                             ? FileImage(_avatar!)
                             : (avatarUrl != null
@@ -237,12 +237,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
         labelText: label,
         labelStyle: const TextStyle(color: Colors.white70),
         filled: true,
-        fillColor: Colors.white.withOpacity(0.1),
+        fillColor:Colors.white.withValues(alpha: 0.1),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
         ),
         enabledBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
+          borderSide: BorderSide(color: Colors.white.withValues(alpha:0.3)),
           borderRadius: BorderRadius.circular(16),
         ),
       ),

@@ -70,7 +70,8 @@ class _FichamentoScreenState extends State<FichamentoScreen> {
       }
 
       generosSelecionados = List<String>.from(generosLivro ?? []);
-      setState(() {});
+
+      if (mounted) setState(() {});
     }
   }
 
@@ -97,7 +98,7 @@ class _FichamentoScreenState extends State<FichamentoScreen> {
     dataInicio = DateTime.tryParse(f["data_inicio"] ?? "");
     dataFim = f["data_fim"] != null ? DateTime.tryParse(f["data_fim"]) : null;
 
-    setState(() {});
+    if (mounted) setState(() {});
   }
 
   Future<void> _salvar() async {
@@ -120,12 +121,19 @@ class _FichamentoScreenState extends State<FichamentoScreen> {
       "generos": generosSelecionados,
     };
 
-    if (!await FichamentoService().upsert(body)) return _erro("Erro ao salvar");
+    if (!await FichamentoService().upsert(body)) {
+      if (!mounted) return;
+      return _erro("Erro ao salvar");
+    }
+
+    if (!mounted) return;
     Navigator.pop(context, true);
   }
 
-  void _erro(String m) =>
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
+  void _erro(String m) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -133,8 +141,10 @@ class _FichamentoScreenState extends State<FichamentoScreen> {
       backgroundColor: const Color(0xFFDCCEE4),
       appBar: AppBar(
         backgroundColor: const Color(0xFF6E4A8E),
-        title: Text(_idFichamento != null ? "Editar Fichamento" : "Criar Fichamento",
-        style: const TextStyle(fontWeight: FontWeight.w600)),
+        title: Text(
+          _idFichamento != null ? "Editar Fichamento" : "Criar Fichamento",
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
       ),
 
       body: SingleChildScrollView(
@@ -142,7 +152,6 @@ class _FichamentoScreenState extends State<FichamentoScreen> {
         child: Column(
           children: [
 
-            /// CAPA
             ClipRRect(
               borderRadius: BorderRadius.circular(18),
               child: Image.network(
@@ -162,7 +171,8 @@ class _FichamentoScreenState extends State<FichamentoScreen> {
             const SizedBox(height: 14),
 
             if (tituloLivro != null) ...[
-              Text(tituloLivro!,
+              Text(
+                tituloLivro!,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 24,
@@ -181,14 +191,13 @@ class _FichamentoScreenState extends State<FichamentoScreen> {
                     label: Text(g, style: const TextStyle(color: Color(0xFF4C2D63),fontWeight: FontWeight.w600)),
                     backgroundColor: const Color(0xFFECDFFA),
                     elevation: 2,
-                  )
+                  ),
                 ).toList(),
               ),
             ],
 
             const SizedBox(height: 30),
 
-            /// INPUTS
             _field(_intro, "Introdução", Icons.menu_book),
             _field(_cenario, "Cenário", Icons.landscape),
             _field(_personagens, "Personagens", Icons.people),
@@ -250,7 +259,7 @@ class _FichamentoScreenState extends State<FichamentoScreen> {
     );
   }
 
-  Widget _field(c, l, i) => Padding(
+  Widget _field(TextEditingController c, String l, IconData i) => Padding(
     padding: const EdgeInsets.only(bottom: 14),
     child: TextField(
       controller: c,
@@ -294,7 +303,7 @@ class _FichamentoScreenState extends State<FichamentoScreen> {
     "Frase favorita": "Trecho marcante e especial",
   }[l] ?? "";
 
-  Widget _data(t, d, f) => TextButton.icon(
+  Widget _data(String t, DateTime? d, Function(DateTime) f) => TextButton.icon(
     icon: const Icon(Icons.date_range, color: Color(0xFF6E4A8E)),
     onPressed: () async {
       final x = await showDatePicker(
@@ -311,7 +320,7 @@ class _FichamentoScreenState extends State<FichamentoScreen> {
     ),
   );
 
-  Widget _sel(String txt, icon, v,{String g = "formato"}) {
+  Widget _sel(String txt, IconData icon, String v,{String g = "formato"}) {
     bool ativo = g=="formato" ? formato==v : visibilidade==v;
 
     return InkWell(
@@ -327,25 +336,25 @@ class _FichamentoScreenState extends State<FichamentoScreen> {
             color:ativo ? const Color(0xFF563575) : Colors.grey.shade400,width:2),
           
           boxShadow:ativo?[
-            BoxShadow(color: Colors.black26,blurRadius:5,offset:Offset(0,3))
+            const BoxShadow(color: Colors.black26,blurRadius:5,offset:Offset(0,3))
           ]:[],
         ),
         child:Column(children:[
-          Icon(icon,color:ativo?Colors.white:Color(0xFF563575)),
+          Icon(icon,color:ativo?Colors.white:const Color(0xFF563575)),
           const SizedBox(height:6),
           Text(txt,
             style:TextStyle(
-              color:ativo?Colors.white:Color(0xFF563575),
+              color:ativo?Colors.white:const Color(0xFF563575),
               fontWeight:FontWeight.w600))
         ]),
       ),
     );
   }
 
-  Row rowSel(w)=>Row(
+  Row rowSel(List<Widget> w)=>Row(
     mainAxisAlignment:MainAxisAlignment.spaceEvenly,children:w);
 
-  Widget _titulo(t)=>Padding(
+  Widget _titulo(String t)=>Padding(
     padding:const EdgeInsets.only(bottom:6),
     child:Text(t,style:const TextStyle(
       color:Color(0xFF4C2D63),

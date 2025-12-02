@@ -36,7 +36,7 @@ class _FichamentosPublicosScreenState extends State<FichamentosPublicosScreen> {
       setState(() {
         generos = [
           "Todos",
-          ...lista.map<String>((g) => g["nome_pt"] ?? g["nome"]).toList(),
+          ...lista.map<String>((g) => g["nome_pt"] ?? g["nome"]),
         ];
       });
     } catch (_) {

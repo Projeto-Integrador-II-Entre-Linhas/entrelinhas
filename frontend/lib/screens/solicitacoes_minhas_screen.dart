@@ -20,7 +20,11 @@ class _MinhasSolicitacoesScreenState extends State<MinhasSolicitacoesScreen> {
   Future<void> _load() async {
     setState(()=>loading=true);
     final list = await s.minhas();
-    setState(()=> { itens = list, loading=false });
+    setState(() {
+      itens = list;
+      loading = false;
+    });
+
   }
 
   @override

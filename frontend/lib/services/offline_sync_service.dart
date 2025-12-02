@@ -32,6 +32,7 @@ class OfflineSyncService {
   Future<void> syncPending() async {
     try {
       final conn = await Connectivity().checkConnectivity();
+      // ignore: unrelated_type_equality_checks
       if (conn == ConnectivityResult.none) return;
 
       var list = await pending();

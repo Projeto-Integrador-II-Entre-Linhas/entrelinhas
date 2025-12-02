@@ -30,6 +30,7 @@ class _FavoritosScreenState extends State<FavoritosScreen> {
 
   Future<void> _desf(int idFichamento) async {
     final ok = await service.desfavoritar(idFichamento);
+    if (!mounted) return;
     if (ok) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Removido dos favoritos')));
       _carregar();

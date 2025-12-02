@@ -11,12 +11,12 @@ class ApiService {
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
 
   //API URL
-  static String API_BASE_URL = '${AppConfig.baseUrl}/api';
+  static String apiBaseUrl = '${AppConfig.baseUrl}/api';
 
   Uri _uri(String endpoint) => Uri.parse(
         endpoint.startsWith('/')
-            ? '$API_BASE_URL$endpoint'
-            : '$API_BASE_URL/$endpoint',
+            ? '$apiBaseUrl$endpoint'
+            : '$apiBaseUrl/$endpoint',
       );
 
   Future<Map<String, String>> _headers() async {

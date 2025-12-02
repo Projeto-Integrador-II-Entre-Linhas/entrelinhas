@@ -67,6 +67,7 @@ class _AdminSolicitacaoDetalheScreenState extends State<AdminSolicitacaoDetalheS
 
   Future<void> _aprovar() async {
     final ok = await s.aprovar(widget.idSolicitacao);
+    if (!mounted) return;
     _msg(ok ? 'Aprovada' : 'Falha');
     if (ok) Navigator.pop(context);
   }
@@ -83,8 +84,10 @@ class _AdminSolicitacaoDetalheScreenState extends State<AdminSolicitacaoDetalheS
         ],
       );
     });
+    
     if (motivo == null) return;
     final ok = await s.rejeitar(widget.idSolicitacao, motivo: motivo.isEmpty ? null : motivo);
+    if (!mounted) return;
     _msg(ok ? 'Rejeitada' : 'Falha');
     if (ok) Navigator.pop(context);
   }

@@ -55,6 +55,9 @@ class _FichamentosDoLivroScreenState extends State<FichamentosDoLivroScreen> {
 
   Future<void> _excluir(int idFichamento) async {
     final resp = await api.delete('fichamentos/$idFichamento');
+
+    if (!mounted) return;
+
     if (resp.statusCode == 200) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Fichamento excluído com sucesso.')),

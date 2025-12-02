@@ -23,6 +23,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     }
 
     setState(() => loading = true);
+
     try {
       final api = ApiService();
       final res = await api.post('auth/reset-password', {
@@ -30,21 +31,32 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
         'novaSenha': novaSenha,
       });
 
+      if (!mounted) return;
+
       if (res.statusCode == 200) {
         _show('Senha redefinida com sucesso!');
+
+        if (!mounted) return;
         Navigator.pop(context);
+
       } else {
         _show('Erro: ${res.body}');
       }
     } catch (e) {
+      if (!mounted) return;
       _show('Erro: $e');
     } finally {
-      setState(() => loading = false);
+      if (mounted) {
+        setState(() => loading = false);
+      }
     }
   }
 
   void _show(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg)),
+    );
   }
 
   @override

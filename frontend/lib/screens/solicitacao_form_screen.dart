@@ -66,6 +66,7 @@ class _SolicitacaoFormScreenState extends State<SolicitacaoFormScreen> {
             .toList(),
       };
       final ok = await SolicitacaoService().criarSolicitacao(body);
+      if (!mounted) return;
       if (ok != null) {
         _msg('Solicitação enviada com sucesso!');
         Navigator.pop(context);
