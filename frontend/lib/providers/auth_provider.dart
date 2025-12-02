@@ -28,13 +28,15 @@ class AuthProvider extends ChangeNotifier {
       final data = await _auth.login(email, senha);
       await _storage.write(key: 'token', value: data['token']);
       if (data['user'] != null) {
-        await _storage.write(key: 'user', value: _auth.userToJson(data['user']));
+        await _storage.write(
+            key: 'user', value: _auth.userToJson(data['user']));
         user = data['user'];
       }
       _isAuthenticated = true;
       notifyListeners();
       return true;
     } catch (e) {
+      print("LOGIN ERROR FLUTTER: $e");
       return false;
     }
   }

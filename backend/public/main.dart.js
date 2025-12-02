@@ -47827,7 +47827,7 @@ c=f.e
 s=c==null?e:J.a3(c,"user")
 c=s==null?e:J.a3(s,"avatar")
 r=A.bZ(c==null?"":c)
-q=r.length!==0?"http://192.168.15.43:3000"+r:e
+q=r.length!==0?"192.168.15.43:3000"+r:e
 c=A.ew(B.NY,B.U,B.iG,B.Q)
 p=q==null
 o=!p?new A.mJ(q,1,e,B.jz):e
@@ -48839,7 +48839,7 @@ r=l.x
 q=r==null
 if(!q)r=new A.oj(r)
 else{r=l.y
-r=r!=null?new A.mJ("http://192.168.15.43:3000"+r,1,k,B.jz):k}s=A.hY(k,A.a68(s,r,q&&l.y==null?B.Lh:k,60),B.r,!1,k,k,k,k,k,k,k,k,k,k,k,k,k,l.gama(),k,k,k,k,k,k)
+r=r!=null?new A.mJ("192.168.15.43:3000"+r,1,k,B.jz):k}s=A.hY(k,A.a68(s,r,q&&l.y==null?B.Lh:k,60),B.r,!1,k,k,k,k,k,k,k,k,k,k,k,k,k,l.gama(),k,k,k,k,k,k)
 r=l.BK(l.d,"Nome completo")
 p=l.BK(l.e,"Nome de usu\xe1rio")
 o=l.BK(l.f,"E-mail")
