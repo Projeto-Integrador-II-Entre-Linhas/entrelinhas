@@ -271,6 +271,7 @@ class _HomeScreenState extends State<HomeScreen> {
               if (!mounted) return;
 
               Navigator.pushNamedAndRemoveUntil(
+                // ignore: use_build_context_synchronously
                 context,
                 '/login',
                 (route) => false,

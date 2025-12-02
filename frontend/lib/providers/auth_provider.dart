@@ -36,6 +36,7 @@ class AuthProvider extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
+      // ignore: avoid_print
       print("LOGIN ERROR FLUTTER: $e");
       return false;
     }

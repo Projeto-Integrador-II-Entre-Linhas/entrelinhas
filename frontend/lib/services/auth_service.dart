@@ -10,7 +10,9 @@ class AuthService {
       'senha': senha,
     });
 
+    // ignore: avoid_print
     print("FLUTTER LOGIN STATUS: ${res.statusCode}");
+    // ignore: avoid_print
     print("FLUTTER LOGIN BODY: ${res.body}");
 
     if (res.statusCode != 200) {
@@ -33,13 +35,24 @@ class AuthService {
   }
 
   Future<Map<String, dynamic>> register(
-      String nome, String usuario, String email, String senha) async {
-    final res = await api.post('auth/register',
-        {'nome': nome, 'usuario': usuario, 'email': email, 'senha': senha});
-    if (res.statusCode == 201 || res.statusCode == 200)
-      return jsonDecode(res.body) as Map<String, dynamic>;
-    throw Exception('Erro no cadastro: ${res.body}');
+    String nome, String usuario, String email, String senha) async {
+  final res = await api.post(
+    'auth/register',
+    {
+      'nome': nome,
+      'usuario': usuario,
+      'email': email,
+      'senha': senha,
+    },
+  );
+
+  if (res.statusCode == 201 || res.statusCode == 200) {
+    return jsonDecode(res.body) as Map<String, dynamic>;
   }
+
+  throw Exception('Erro no cadastro: ${res.body}');
+}
+
 
   Map<String, dynamic> parseUser(String json) =>
       jsonDecode(json) as Map<String, dynamic>;
