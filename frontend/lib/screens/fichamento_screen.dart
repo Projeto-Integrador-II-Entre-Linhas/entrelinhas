@@ -2,9 +2,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../services/fichamento_service.dart';
 import '../services/api_service.dart';
-import '../services/offline_sync_service.dart';
-
-final OfflineSyncService _offline = OfflineSyncService();
 
 class FichamentoScreen extends StatefulWidget {
   final int? livroId;
@@ -38,7 +35,7 @@ class _FichamentoScreenState extends State<FichamentoScreen> {
 
   String? tituloLivro;
   List<dynamic>? generosLivro = [];
-  String capaLivro = "https://via.placeholder.com/350x500";
+  String capaLivro = "https://i.pinimg.com/736x/da/8f/b2/da8fb239479856a78bdd048d038486be.jpg/350x500";
 
   @override
   void initState() {
@@ -113,7 +110,7 @@ class _FichamentoScreenState extends State<FichamentoScreen> {
       "narrativa": _narrativa.text.trim(),
       "conclusao": _critica.text.trim(),
       "visibilidade": visibilidade,
-      "data_inicio": dataInicio!.toIso8601String(),
+      "data_inicio": dataInicio?.toIso8601String(),
       "data_fim": dataFim?.toIso8601String(),
       "formato": formato,
       "frase_favorita": _frase.text.trim(),
@@ -121,14 +118,52 @@ class _FichamentoScreenState extends State<FichamentoScreen> {
       "generos": generosSelecionados,
     };
 
-    if (!await FichamentoService().upsert(body)) {
-      if (!mounted) return;
-      return _erro("Erro ao salvar");
+    final ok = await FichamentoService().upsert(body);
+
+    if (!ok && _livroId != null) {
+
+      final existente = await FichamentoService().meuPorLivro(_livroId!);
+
+      if (existente != null) {
+        showDialog(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: const Text("Fichamento já existe"),
+            content: const Text(
+              "Você já criou um fichamento para este livro.\nDeseja editar o fichamento existente?"
+            ),
+            actions: [
+              TextButton(
+                child: const Text("Cancelar"),
+                onPressed: () => Navigator.pop(context),
+              ),
+              ElevatedButton(
+                child: const Text("Editar"),
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => FichamentoScreen(
+                        fichamentoExistente: existente,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      }
+
+      return;
     }
 
+    // ✔ Salvo com sucesso
     if (!mounted) return;
     Navigator.pop(context, true);
   }
+
 
   void _erro(String m) {
     if (!mounted) return;
@@ -182,20 +217,6 @@ class _FichamentoScreenState extends State<FichamentoScreen> {
               ),
             ],
 
-            if (generosLivro?.isNotEmpty == true) ...[
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                children: generosLivro!.map((g) =>
-                  Chip(
-                    label: Text(g, style: const TextStyle(color: Color(0xFF4C2D63),fontWeight: FontWeight.w600)),
-                    backgroundColor: const Color(0xFFECDFFA),
-                    elevation: 2,
-                  ),
-                ).toList(),
-              ),
-            ],
-
             const SizedBox(height: 30),
 
             _field(_intro, "Introdução", Icons.menu_book),
@@ -228,7 +249,7 @@ class _FichamentoScreenState extends State<FichamentoScreen> {
 
             const SizedBox(height: 24),
 
-            _titulo("Classificação"),
+            _titulo("Nota"),
             Slider(
               value: nota.toDouble(),
               min: 1,
@@ -244,12 +265,14 @@ class _FichamentoScreenState extends State<FichamentoScreen> {
 
             ElevatedButton.icon(
               icon: const Icon(Icons.check, size: 22),
-              label: const Text("Salvar", style: TextStyle(fontSize: 18,fontWeight: FontWeight.bold)),
+              label: const Text("Salvar",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF6E4A8E),
                 elevation: 4,
                 minimumSize: const Size(double.infinity, 55),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18)),
               ),
               onPressed: _salvar,
             ),
@@ -260,106 +283,111 @@ class _FichamentoScreenState extends State<FichamentoScreen> {
   }
 
   Widget _field(TextEditingController c, String l, IconData i) => Padding(
-    padding: const EdgeInsets.only(bottom: 14),
-    child: TextField(
-      controller: c,
-      minLines: 3,
-      maxLines: null,
-      style: const TextStyle(color: Color(0xFF382246),fontSize:16,fontWeight: FontWeight.w500),
-
-      decoration: InputDecoration(
-        filled: true,
-        fillColor: const Color(0xFFEFE0F6),
-
-        prefixIcon: Icon(i, color: Color(0xFF6E4A8E)),
-        labelText: l,
-        labelStyle: const TextStyle(
-          color: Color(0xFF6E4A8E),
-          fontWeight: FontWeight.w600,
+        padding: const EdgeInsets.only(bottom: 14),
+        child: TextField(
+          controller: c,
+          minLines: 3,
+          maxLines: null,
+          style: const TextStyle(
+              color: Color(0xFF382246), fontSize: 16, fontWeight: FontWeight.w500),
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: const Color(0xFFEFE0F6),
+            prefixIcon: Icon(i, color: Color(0xFF6E4A8E)),
+            labelText: l,
+            labelStyle: const TextStyle(
+              color: Color(0xFF6E4A8E),
+              fontWeight: FontWeight.w600,
+            ),
+            hintText: _ph(l),
+            hintStyle: const TextStyle(color: Color(0xFF8C75A4)),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(18),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(18),
+              borderSide:
+                  const BorderSide(color: Color(0xFF6E4A8E), width: 2),
+            ),
+          ),
         ),
-
-        hintText: _ph(l),
-        hintStyle: const TextStyle(color: Color(0xFF8C75A4)),
-
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
-          borderSide: BorderSide.none,
-        ),
-        
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
-          borderSide: const BorderSide(color: Color(0xFF6E4A8E), width: 2),
-        ),
-      ),
-    ),
-  );
+      );
 
   String _ph(String l) => {
-    "Introdução": "Primeiras impressões, resumo inicial...",
-    "Cenário": "Onde a história se passa?",
-    "Personagens": "Principais figuras da narrativa",
-    "Narrativa": "Resumo da trama e desenvolvimentos",
-    "Críticas": "O que achou? Pontos fortes e fracos",
-    "Frase favorita": "Trecho marcante e especial",
-  }[l] ?? "";
+        "Introdução": "Primeiras impressões, resumo inicial...",
+        "Cenário": "Onde a história se passa?",
+        "Personagens": "Personagens principais da história",
+        "Narrativa": "Resumo da trama e desenvolvimentos",
+        "Críticas": "O que achou? Pontos fortes e fracos",
+        "Frase favorita": "Trecho marcante",
+      }[l] ?? "";
 
-  Widget _data(String t, DateTime? d, Function(DateTime) f) => TextButton.icon(
-    icon: const Icon(Icons.date_range, color: Color(0xFF6E4A8E)),
-    onPressed: () async {
-      final x = await showDatePicker(
-        context: context,
-        initialDate: d ?? DateTime.now(),
-        firstDate: DateTime(1800),
-        lastDate: DateTime(2100),
+  Widget _data(String t, DateTime? d, Function(DateTime) f) =>
+      TextButton.icon(
+        icon: const Icon(Icons.date_range, color: Color(0xFF6E4A8E)),
+        onPressed: () async {
+          final x = await showDatePicker(
+            context: context,
+            initialDate: d ?? DateTime.now(),
+            firstDate: DateTime(1800),
+            lastDate: DateTime(2100),
+          );
+          if (x != null) f(x);
+        },
+        label: Text(
+          "$t: ${d != null ? "${d.day}/${d.month}/${d.year}" : "-"}",
+          style: const TextStyle(
+              color: Color(0xFF4C2D63),
+              fontSize: 16,
+              fontWeight: FontWeight.w600),
+        ),
       );
-      if (x != null) f(x);
-    },
-    label: Text(
-      "$t: ${d != null ? "${d.day}/${d.month}/${d.year}" : "-"}",
-      style: const TextStyle(color: Color(0xFF4C2D63), fontSize: 16,fontWeight: FontWeight.w600),
-    ),
-  );
 
-  Widget _sel(String txt, IconData icon, String v,{String g = "formato"}) {
-    bool ativo = g=="formato" ? formato==v : visibilidade==v;
+  Widget _sel(String txt, IconData icon, String v, {String g = "formato"}) {
+    bool ativo = g == "formato" ? formato == v : visibilidade == v;
 
     return InkWell(
-      onTap:()=>setState(()=>g=="formato"?formato=v:visibilidade=v),
-      child:AnimatedContainer(
+      onTap: () => setState(() => g == "formato" ? formato = v : visibilidade = v),
+      child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.all(14),
-        decoration:BoxDecoration(
-          borderRadius:BorderRadius.circular(16),
-          color:ativo ? const Color(0xFF8A6EB0) : const Color(0xFFEADCF3),
-
-          border:Border.all(
-            color:ativo ? const Color(0xFF563575) : Colors.grey.shade400,width:2),
-          
-          boxShadow:ativo?[
-            const BoxShadow(color: Colors.black26,blurRadius:5,offset:Offset(0,3))
-          ]:[],
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          color: ativo ? const Color(0xFF8A6EB0) : const Color(0xFFEADCF3),
+          border: Border.all(
+              color: ativo ? const Color(0xFF563575) : Colors.grey.shade400,
+              width: 2),
+          boxShadow: ativo
+              ? [
+                  const BoxShadow(
+                      color: Colors.black26,
+                      blurRadius: 5,
+                      offset: Offset(0, 3))
+                ]
+              : [],
         ),
-        child:Column(children:[
-          Icon(icon,color:ativo?Colors.white:const Color(0xFF563575)),
-          const SizedBox(height:6),
+        child: Column(children: [
+          Icon(icon, color: ativo ? Colors.white : const Color(0xFF563575)),
+          const SizedBox(height: 6),
           Text(txt,
-            style:TextStyle(
-              color:ativo?Colors.white:const Color(0xFF563575),
-              fontWeight:FontWeight.w600))
+              style: TextStyle(
+                  color: ativo ? Colors.white : const Color(0xFF563575),
+                  fontWeight: FontWeight.w600))
         ]),
       ),
     );
   }
 
-  Row rowSel(List<Widget> w)=>Row(
-    mainAxisAlignment:MainAxisAlignment.spaceEvenly,children:w);
+  Row rowSel(List<Widget> w) =>
+      Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: w);
 
-  Widget _titulo(String t)=>Padding(
-    padding:const EdgeInsets.only(bottom:6),
-    child:Text(t,style:const TextStyle(
-      color:Color(0xFF4C2D63),
-      fontSize:19,
-      fontWeight:FontWeight.bold
-    )),
-  );
+  Widget _titulo(String t) => Padding(
+        padding: const EdgeInsets.only(bottom: 6),
+        child: Text(t,
+            style: const TextStyle(
+                color: Color(0xFF4C2D63),
+                fontSize: 19,
+                fontWeight: FontWeight.bold)),
+      );
 }

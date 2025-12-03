@@ -32,7 +32,7 @@ export const upsertFichamento = async (req, res) => {
       [id_usuario, id_livro, id_fichamento || null]
     );
     if (dup.rows.length > 0) {
-      return res.status(400).json({ error: 'Você já possui um fichamento para este livro.' });
+      return res.status(409).json({ error: 'FICHAMENTO_DUPLICADO' });
     }
 
     let rows;

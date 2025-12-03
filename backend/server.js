@@ -42,15 +42,11 @@ app.use('/api/solicitacoes', solicitacaoRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use("/open", resetLink);
 
-
-// Servir arquivos estáticos do Flutter Web
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Qualquer rota que não seja /api → devolver index.html do Flutter
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
-
 
 const PORT = process.env.PORT || 3000;
 

@@ -105,7 +105,7 @@ class _LivroCadastroScreenState extends State<LivroCadastroScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Este livro já está cadastrado.'),
-            backgroundColor: Colors.amber,
+            backgroundColor: Color(0xFF5B3765),
           ),
         );
       } else {

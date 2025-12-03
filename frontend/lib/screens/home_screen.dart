@@ -11,6 +11,9 @@ import 'solicitacoes_minhas_screen.dart';
 import 'admin_solicitacoes_screen.dart';
 import 'admin_usuarios_screen.dart';
 import 'fichamentos_publicos_screen.dart';
+import 'meus_fichamentos_screen.dart';
+import 'favoritos_screen.dart';
+
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -101,13 +104,68 @@ class _HomeScreenState extends State<HomeScreen> {
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  _sectionTitle('Fichamentos Favoritos'),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Padding(
+                        padding: EdgeInsets.only(left: 4),
+                        child: Text(
+                          'Fichamentos Favoritos',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF4F2A75),
+                          ),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const FavoritosScreen()),
+                          );
+                        },
+                        child: const Text(
+                          'Ver todos',
+                          style: TextStyle(color: Color(0xFF4F2A75)),
+                        ),
+                      ),
+                    ],
+                  ),
                   _FavoritosCarousel(items: data?['favoritos'] ?? []),
+
                   const SizedBox(height: 24),
 
-                  _sectionTitle('Meus Fichamentos'),
-                  _FichamentosUsuarioCarousel(
-                      items: data?['meus_fichamentos'] ?? []),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Padding(
+                        padding: EdgeInsets.only(left: 4),
+                        child: Text(
+                          'Meus Fichamentos',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF4F2A75),
+                          ),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const MeusFichamentosScreen()),
+                          );
+                        },
+                        child: const Text(
+                          'Ver todos',
+                          style: TextStyle(color: Color(0xFF4F2A75)),
+                        ),
+                      ),
+                    ],
+                  ),
+                  _FichamentosUsuarioCarousel(items: data?['meus_fichamentos'] ?? []),
+
                   const SizedBox(height: 24),
 
                   Row(
@@ -225,6 +283,20 @@ class _HomeScreenState extends State<HomeScreen> {
               context,
               MaterialPageRoute(
                   builder: (_) => const MinhasSolicitacoesScreen()),
+            );
+          }),
+
+          _drawerItem(Icons.book, "Meus Fichamentos", () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const MeusFichamentosScreen()),
+            );
+          }),
+
+          _drawerItem(Icons.favorite, "Favoritos", () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const FavoritosScreen()),
             );
           }),
 

@@ -296,7 +296,7 @@ class _LivroDetalhesScreenState extends State<LivroDetalhesScreen> {
         elevation: 0,
         centerTitle: true,
         title: const Text(
-          "Entre Linhas",
+          "Detalhes do Livro",
           style: TextStyle(color: Colors.white, fontSize: 20),
         ),
       ),

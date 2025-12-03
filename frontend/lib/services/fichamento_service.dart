@@ -34,14 +34,19 @@ class FichamentoService {
 
   Future<bool> upsert(Map<String, dynamic> body) async {
     try {
-      final res = await api.post('fichamentos', body);
-      if (res.statusCode == 200 || res.statusCode == 201) return true;
+      final r = await api.post('fichamentos', body);
 
-      if (res.statusCode == 0) {
-        await _saveOffline(body);
+      if (r.statusCode == 200 || r.statusCode == 201) {
         return true;
       }
-      return false;
+
+      if (r.statusCode == 409) {
+        return false;
+      }
+
+      await _saveOffline(body);
+      return true;
+
     } catch (_) {
       await _saveOffline(body);
       return true;
