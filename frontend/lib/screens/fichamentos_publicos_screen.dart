@@ -13,7 +13,7 @@ class FichamentosPublicosScreen extends StatefulWidget {
 
 class _FichamentosPublicosScreenState extends State<FichamentosPublicosScreen> {
   final ApiService api = ApiService();
-  final FichamentoService service = FichamentoService(); // ✅ usa o serviço certo
+  final FichamentoService service = FichamentoService();
 
   final busca = TextEditingController();
   String? filtroBusca;
@@ -179,7 +179,7 @@ class _FichamentosPublicosScreenState extends State<FichamentosPublicosScreen> {
           style: TextStyle(color: Colors.white, fontSize: 22),
         ),
         centerTitle: true,
-        backgroundColor: const Color(0xFF4F3466),
+        backgroundColor: const Color(0xFF6E4A8E),
       ),
 
       body: Column(

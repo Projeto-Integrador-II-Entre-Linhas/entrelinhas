@@ -148,11 +148,11 @@ class _LivroCadastroScreenState extends State<LivroCadastroScreen> {
       backgroundColor: const Color(0xFFD2C9D4),
       appBar: AppBar(
         title: const Text(
-          'Buscar ou Cadastrar Livro',
+          'Cadastrar Livro',
           style: TextStyle(color: Colors.white),
         ),
-        backgroundColor: const Color(0xFF4F3466),
-        iconTheme: const IconThemeData(color: Colors.white),
+        backgroundColor: const Color(0xFF6E4A8E),
+        iconTheme: const IconThemeData(color: Color(0xFF4F3466)),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),

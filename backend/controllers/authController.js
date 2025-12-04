@@ -24,7 +24,6 @@ async function getTransport() {
     });
   }
 
-  // fallback (modo dev)
   const test = await nodemailer.createTestAccount();
   console.log('Usando Ethereal:', test.user, test.pass);
   return nodemailer.createTransport({
@@ -47,7 +46,9 @@ export const register = async (req, res) => {
       [email, usuario]
     );
     if (exists.rows.length > 0) {
-      return res.status(409).json({ error: 'Usuário ou e-mail já cadastrado' });
+      return res.status(409).json({
+        error: 'Este e-mail ou nome de usuário já está em uso. Tente outro.'
+      });
     }
 
     const hashedPassword = await bcrypt.hash(senha, 10);
@@ -70,20 +71,41 @@ export const register = async (req, res) => {
 //  LOGIN
 export const login = async (req, res) => {
   const { email, senha } = req.body;
-  if (!email || !senha) return res.status(400).json({ error: 'Email e senha obrigatórios' });
+  if (!email || !senha)
+    return res.status(400).json({ error: 'Email e senha obrigatórios' });
 
   try {
-    const { rows } = await pool.query('SELECT * FROM usuarios WHERE email=$1 LIMIT 1', [email]);
-    if (rows.length === 0) return res.status(401).json({ error: 'Credenciais inválidas' });
+    const { rows } = await pool.query(
+      'SELECT * FROM usuarios WHERE email=$1 LIMIT 1',
+      [email]
+    );
+
+    if (rows.length === 0)
+      return res.status(401).json({ error: 'Credenciais inválidas' });
 
     const user = rows[0];
+
+    if (user.status !== 'ATIVO') {
+      return res
+        .status(403)
+        .json({ error: 'Conta inativa. Entre em contato com o suporte - entre.linhas.app2025@gmail.com' });
+    }
+
     const ok = await bcrypt.compare(senha, user.senha);
     if (!ok) return res.status(401).json({ error: 'Credenciais inválidas' });
 
-    const token = jwt.sign({ sub: user.id_usuario, perfil: user.perfil }, SECRET, { expiresIn: '7d' });
-    await pool.query('UPDATE usuarios SET data_ultimo_login = NOW() WHERE id_usuario=$1', [user.id_usuario]);
+    const token = jwt.sign(
+      { sub: user.id_usuario, perfil: user.perfil },
+      SECRET,
+      { expiresIn: '7d' }
+    );
 
-    res.json({
+    await pool.query(
+      'UPDATE usuarios SET data_ultimo_login = NOW() WHERE id_usuario=$1',
+      [user.id_usuario]
+    );
+
+    return res.json({
       token,
       user: {
         id_usuario: user.id_usuario,
@@ -93,11 +115,13 @@ export const login = async (req, res) => {
         perfil: user.perfil,
       },
     });
+
   } catch (err) {
     console.error('LOGIN ERROR:', err);
-    res.status(500).json({ error: 'Erro no login' });
+    return res.status(500).json({ error: 'Erro no login' });
   }
 };
+
 
 //  FORGOT PASSWORD 
 export const forgotPassword = async (req, res) => {
@@ -150,7 +174,6 @@ export const forgotPassword = async (req, res) => {
     res.status(500).json({ error: 'Erro ao gerar link' });
   }
 };
-
 
 //  RESET PASSWORD - Nova senha
 export const resetPassword = async (req, res) => {

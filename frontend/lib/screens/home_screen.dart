@@ -13,7 +13,18 @@ import 'admin_usuarios_screen.dart';
 import 'fichamentos_publicos_screen.dart';
 import 'meus_fichamentos_screen.dart';
 import 'favoritos_screen.dart';
+import 'recomendacoes_screen.dart';
 
+
+class BrandColors {
+  static const Color background = Color(0xFFDCCEE6);
+  static const Color card = Color(0xFFEDE3F4);
+  static const Color primary = Color(0xFF6E4A8E);
+  static const Color secondary = Color(0xFF8A68B1);
+  static const Color title = Color(0xFF4F2A75);
+  static const Color icon = Color(0xFF6E4A8E);
+  static const Color shadow = Color(0x14000000);
+}
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -49,15 +60,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final userDash = data?['user'];
     final avatarPath = (userDash?['avatar'] ?? '') as String;
-
-    final avatarUrl = avatarPath.isNotEmpty
-        ? '${AppConfig.baseUrl}$avatarPath'
-        : null;
+    final avatarUrl =
+        avatarPath.isNotEmpty ? '${AppConfig.baseUrl}$avatarPath' : null;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFE8DFF1),
+      backgroundColor: BrandColors.background,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF4F2A75),
+        backgroundColor: BrandColors.primary,
         elevation: 4,
         centerTitle: true,
         title: Row(
@@ -88,127 +97,91 @@ class _HomeScreenState extends State<HomeScreen> {
                 backgroundImage:
                     avatarUrl != null ? NetworkImage(avatarUrl) : null,
                 child: avatarUrl == null
-                    ? const Icon(Icons.person, color: Color(0xFF4F2A75))
+                    ? const Icon(Icons.person, color: BrandColors.primary)
                     : null,
               ),
             ),
           )
         ],
       ),
+
       drawer: _buildDrawer(context, auth, perfil, avatarUrl),
+
       body: loading
           ? const Center(
-              child: CircularProgressIndicator(color: Color(0xFF4F2A75)))
+              child: CircularProgressIndicator(color: BrandColors.primary),
+            )
           : RefreshIndicator(
+              color: BrandColors.primary,
               onRefresh: _load,
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Padding(
-                        padding: EdgeInsets.only(left: 4),
-                        child: Text(
-                          'Fichamentos Favoritos',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF4F2A75),
-                          ),
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => const FavoritosScreen()),
-                          );
-                        },
-                        child: const Text(
-                          'Ver todos',
-                          style: TextStyle(color: Color(0xFF4F2A75)),
-                        ),
-                      ),
-                    ],
+                  // FAVORITOS
+                  _sectionHeader(
+                    title: 'Fichamentos Favoritos',
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const FavoritosScreen()),
+                    ),
                   ),
                   _FavoritosCarousel(items: data?['favoritos'] ?? []),
 
                   const SizedBox(height: 24),
 
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Padding(
-                        padding: EdgeInsets.only(left: 4),
-                        child: Text(
-                          'Meus Fichamentos',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF4F2A75),
-                          ),
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => const MeusFichamentosScreen()),
-                          );
-                        },
-                        child: const Text(
-                          'Ver todos',
-                          style: TextStyle(color: Color(0xFF4F2A75)),
-                        ),
-                      ),
-                    ],
+                  // MEUS FICHAMENTOS
+                  _sectionHeader(
+                    title: 'Meus Fichamentos',
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const MeusFichamentosScreen()),
+                    ),
                   ),
-                  _FichamentosUsuarioCarousel(items: data?['meus_fichamentos'] ?? []),
+                  _FichamentosUsuarioCarousel(
+                      items: data?['meus_fichamentos'] ?? []),
 
                   const SizedBox(height: 24),
 
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Padding(
-                        padding: EdgeInsets.only(left: 4),
-                        child: Text(
-                          'Fichamentos Públicos',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF4F2A75),
-                          ),
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const FichamentosPublicosScreen(),
-                            ),
-                          );
-                        },
-                        child: const Text(
-                          'Ver todos',
-                          style: TextStyle(color: Color(0xFF4F2A75)),
-                        ),
-                      ),
-                    ],
+                  // PÚBLICOS
+                  _sectionHeader(
+                    title: 'Fichamentos Públicos',
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const FichamentosPublicosScreen()),
+                    ),
                   ),
                   _FichamentosPublicosCarousel(
                       items: data?['fichamentos_publicos'] ?? []),
 
                   const SizedBox(height: 24),
-                  _sectionTitle('Suas Solicitações'),
-                  _SolicitacoesList(items: data?['solicitacoes'] ?? []),
+
+                  // RECOMENDAÇÕES
+                  _sectionHeader(
+                    title: 'Recomendações Para Você',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => RecomendacoesScreen(
+                            recomendados: data?['recomendados'] ?? [],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+
+                  _RecomendadosCarousel(
+                    items: data?['recomendados'] ?? [],
+                  ),
+
                 ],
               ),
             ),
+
       floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: const Color(0xFF8562A5),
+        backgroundColor: BrandColors.secondary,
         foregroundColor: Colors.white,
         onPressed: () => Navigator.push(
           context,
@@ -229,11 +202,11 @@ class _HomeScreenState extends State<HomeScreen> {
     final userDash = data?['user'];
 
     return Drawer(
-      backgroundColor: const Color(0xFFF3EBFA),
+      backgroundColor: BrandColors.card,
       child: Column(
         children: [
           UserAccountsDrawerHeader(
-            decoration: const BoxDecoration(color: Color(0xFF4F2A75)),
+            decoration: const BoxDecoration(color: BrandColors.primary),
             accountName: Text(
               userDash?['nome'] ?? auth.user?['nome'] ?? 'Usuário',
               style: const TextStyle(
@@ -250,7 +223,7 @@ class _HomeScreenState extends State<HomeScreen> {
               backgroundImage:
                   avatarUrl != null ? NetworkImage(avatarUrl) : null,
               child: avatarUrl == null
-                  ? const Icon(Icons.person, color: Color(0xFF4F2A75))
+                  ? const Icon(Icons.person, color: BrandColors.primary)
                   : null,
             ),
           ),
@@ -336,14 +309,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 fontWeight: FontWeight.bold,
               ),
             ),
-
             onTap: () async {
               await auth.logout();
-
               if (!mounted) return;
 
               Navigator.pushNamedAndRemoveUntil(
-                // ignore: use_build_context_synchronously
                 context,
                 '/login',
                 (route) => false,
@@ -357,11 +327,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   ListTile _drawerItem(IconData icon, String text, VoidCallback onTap) {
     return ListTile(
-      leading: Icon(icon, color: const Color(0xFF4F2A75)),
+      leading: Icon(icon, color: BrandColors.icon),
       title: Text(
         text,
         style: const TextStyle(
-          color: Color(0xFF3B1F52),
+          color: BrandColors.title,
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -369,20 +339,33 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _sectionTitle(String title) => Padding(
-        padding: const EdgeInsets.only(left: 4, bottom: 8),
-        child: Text(
-          title,
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF4F2A75),
+  Widget _sectionHeader({required String title, required VoidCallback onTap}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4),
+          child: Text(
+            title,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: BrandColors.title,
+            ),
           ),
         ),
-      );
+        TextButton(
+          onPressed: onTap,
+          child: const Text(
+            'Ver todos',
+            style: TextStyle(color: BrandColors.title),
+          ),
+        ),
+      ],
+    );
+  }
 }
 
-// === FAVORITOS ===
 class _FavoritosCarousel extends StatelessWidget {
   final List items;
   const _FavoritosCarousel({required this.items});
@@ -391,9 +374,11 @@ class _FavoritosCarousel extends StatelessWidget {
   Widget build(BuildContext context) {
     if (items.isEmpty) {
       return const Center(
-          child: Text('Nenhum favorito encontrado.',
-              style: TextStyle(color: Color(0xFF4F2A75))));
+        child: Text('Nenhum favorito encontrado.',
+            style: TextStyle(color: BrandColors.title)),
+      );
     }
+
     return SizedBox(
       height: 180,
       child: ListView.separated(
@@ -422,7 +407,7 @@ class _FavoritosCarousel extends StatelessWidget {
                   : Container(
                       width: 120,
                       height: 180,
-                      color: const Color(0xFF8562A5),
+                      color: BrandColors.secondary,
                       child: const Icon(Icons.book, color: Colors.white),
                     ),
             ),
@@ -433,7 +418,6 @@ class _FavoritosCarousel extends StatelessWidget {
   }
 }
 
-// === MEUS FICHAMENTOS ===
 class _FichamentosUsuarioCarousel extends StatelessWidget {
   final List items;
   const _FichamentosUsuarioCarousel({required this.items});
@@ -442,10 +426,8 @@ class _FichamentosUsuarioCarousel extends StatelessWidget {
   Widget build(BuildContext context) {
     if (items.isEmpty) {
       return const Center(
-        child: Text(
-          'Você ainda não criou fichamentos.',
-          style: TextStyle(color: Color(0xFF4F2A75)),
-        ),
+        child: Text('Você ainda não criou fichamentos.',
+            style: TextStyle(color: BrandColors.title)),
       );
     }
 
@@ -457,7 +439,6 @@ class _FichamentosUsuarioCarousel extends StatelessWidget {
         separatorBuilder: (_, __) => const SizedBox(width: 12),
         itemBuilder: (_, i) {
           final f = items[i];
-
           return _FichamentoCard(
             capa: f['capa_url'] ?? '',
             titulo: f['titulo'] ?? '',
@@ -471,7 +452,6 @@ class _FichamentosUsuarioCarousel extends StatelessWidget {
   }
 }
 
-// === FICHAMENTOS PÚBLICOS ===
 class _FichamentosPublicosCarousel extends StatelessWidget {
   final List items;
   const _FichamentosPublicosCarousel({required this.items});
@@ -480,10 +460,8 @@ class _FichamentosPublicosCarousel extends StatelessWidget {
   Widget build(BuildContext context) {
     if (items.isEmpty) {
       return const Center(
-        child: Text(
-          'Nenhum fichamento público encontrado.',
-          style: TextStyle(color: Color(0xFF4F2A75)),
-        ),
+        child: Text('Nenhum fichamento público encontrado.',
+            style: TextStyle(color: BrandColors.title)),
       );
     }
 
@@ -495,7 +473,6 @@ class _FichamentosPublicosCarousel extends StatelessWidget {
         separatorBuilder: (_, __) => const SizedBox(width: 12),
         itemBuilder: (_, i) {
           final f = items[i];
-
           return _FichamentoCard(
             capa: f['capa_url'] ?? '',
             titulo: f['titulo'] ?? '',
@@ -509,7 +486,6 @@ class _FichamentosPublicosCarousel extends StatelessWidget {
   }
 }
 
-// === CARD ===
 class _FichamentoCard extends StatelessWidget {
   final String capa;
   final String titulo;
@@ -536,11 +512,11 @@ class _FichamentoCard extends StatelessWidget {
       child: Container(
         width: 150,
         decoration: BoxDecoration(
-          color: const Color(0xFFE5D8F2),
+          color: BrandColors.card,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.10),
+              color: BrandColors.shadow,
               blurRadius: 6,
               offset: const Offset(2, 2),
             ),
@@ -550,7 +526,8 @@ class _FichamentoCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(16)),
               child: capa.isNotEmpty
                   ? Image.network(
                       capa,
@@ -561,9 +538,9 @@ class _FichamentoCard extends StatelessWidget {
                   : Container(
                       width: 150,
                       height: 140,
-                      color: const Color(0xFF8562A5),
-                      child:
-                          const Icon(Icons.menu_book, color: Colors.white, size: 40),
+                      color: BrandColors.secondary,
+                      child: const Icon(Icons.menu_book,
+                          color: Colors.white, size: 40),
                     ),
             ),
 
@@ -578,17 +555,16 @@ class _FichamentoCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF4F2A75),
+                      color: BrandColors.title,
                     ),
                   ),
                   const SizedBox(height: 4),
-
                   Text(
                     subtitulo,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      color: Color(0xFF654A81),
+                      color: Color(0xFF6B5288),
                       fontSize: 12,
                     ),
                   ),
@@ -602,41 +578,124 @@ class _FichamentoCard extends StatelessWidget {
   }
 }
 
-// === SOLICITAÇÕES ===
-class _SolicitacoesList extends StatelessWidget {
+// RECOMENDAÇÕES
+class _RecomendadosCarousel extends StatelessWidget {
   final List items;
-  const _SolicitacoesList({required this.items});
+  const _RecomendadosCarousel({required this.items});
 
   @override
   Widget build(BuildContext context) {
     if (items.isEmpty) {
-      return const Text(
-        'Nenhuma solicitação registrada.',
-        style: TextStyle(color: Color(0xFF4F2A75)),
+      return const Center(
+        child: Text('Nenhuma recomendação disponível.',
+            style: TextStyle(color: BrandColors.title)),
       );
     }
 
-    return Column(
-      children: items.map((s) {
-        return Container(
-          margin: const EdgeInsets.only(bottom: 8),
-          decoration: BoxDecoration(
-            color: const Color(0xFFE5D8F2),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: ListTile(
-            leading: const Icon(Icons.fact_check, color: Color(0xFF4F2A75)),
-            title: Text(
-              s['titulo'] ?? 'Solicitação',
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-            subtitle: Text(
-              'Status: ${s['status']} • Por: ${s['usuario'] ?? 'Usuário'}',
-              style: const TextStyle(color: Color(0xFF6B5288)),
-            ),
-          ),
+    return SizedBox(
+      height: 220,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: items.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 12),
+        itemBuilder: (_, i) {
+          final l = items[i];
+          return _LivroRecomendadoCard(
+            capa: l['capa_url'] ?? '',
+            titulo: l['titulo'] ?? '',
+            autor: l['autor'] ?? '',
+            idLivro: l['id_livro'],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _LivroRecomendadoCard extends StatelessWidget {
+  final String capa;
+  final String titulo;
+  final String autor;
+  final int idLivro;
+
+  const _LivroRecomendadoCard({
+    required this.capa,
+    required this.titulo,
+    required this.autor,
+    required this.idLivro,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.pushNamed(
+          context,
+          '/livro-detalhes',
+          arguments: {'id_livro': idLivro},
         );
-      }).toList(),
+      },
+      child: Container(
+        width: 150,
+        decoration: BoxDecoration(
+          color: BrandColors.card,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: BrandColors.shadow,
+              blurRadius: 6,
+              offset: const Offset(2, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(16)),
+              child: capa.isNotEmpty
+                  ? Image.network(
+                      capa,
+                      width: 150,
+                      height: 140,
+                      fit: BoxFit.cover,
+                    )
+                  : Container(
+                      width: 150,
+                      height: 140,
+                      color: BrandColors.secondary,
+                      child: const Icon(Icons.menu_book,
+                          color: Colors.white, size: 40),
+                    ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    titulo,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        color: BrandColors.title),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    autor,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        color: BrandColors.secondary, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

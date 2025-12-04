@@ -46,6 +46,7 @@ class _MyAppState extends State<MyApp> {
   }
 
   void _handleDeepLink(Uri uri) {
+    // ignore: avoid_print
     print("Deep link recebido: $uri");
 
     if (uri.path.contains("reset-password")) {

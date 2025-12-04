@@ -53,7 +53,6 @@ class AuthService {
   throw Exception('Erro no cadastro: ${res.body}');
 }
 
-
   Map<String, dynamic> parseUser(String json) =>
       jsonDecode(json) as Map<String, dynamic>;
   String userToJson(Map<String, dynamic> user) => jsonEncode(user);

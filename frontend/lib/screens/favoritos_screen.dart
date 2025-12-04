@@ -84,7 +84,7 @@ class _FavoritosScreenState extends State<FavoritosScreen> {
           style: TextStyle(color: Colors.white, fontSize: 22),
         ),
         centerTitle: true,
-        backgroundColor: const Color(0xFF4F3466),
+        backgroundColor: const Color(0xFF6E4A8E),
       ),
 
       body: Column(

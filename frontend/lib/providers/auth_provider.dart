@@ -14,7 +14,7 @@ class AuthProvider extends ChangeNotifier {
   Future<void> tryAutoLogin() async {
     final token = await _storage.read(key: 'token');
     if (token != null) {
-      //verifica validade do token (decoding) ou consultar /api/users/me
+      //verifica validade do token
       _isAuthenticated = true;
       // carregar user salvo
       final userJson = await _storage.read(key: 'user');
@@ -28,17 +28,15 @@ class AuthProvider extends ChangeNotifier {
       final data = await _auth.login(email, senha);
       await _storage.write(key: 'token', value: data['token']);
       if (data['user'] != null) {
-        await _storage.write(
-            key: 'user', value: _auth.userToJson(data['user']));
+        await _storage.write(key: 'user', value: _auth.userToJson(data['user']));
         user = data['user'];
       }
       _isAuthenticated = true;
       notifyListeners();
       return true;
     } catch (e) {
-      // ignore: avoid_print
       print("LOGIN ERROR FLUTTER: $e");
-      return false;
+      throw e; 
     }
   }
 

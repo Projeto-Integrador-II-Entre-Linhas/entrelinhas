@@ -84,7 +84,7 @@ export const isFavorito = async (req, res) => {
   }
 };
 
-// --- Alternar favorito (adiciona ou remove automaticamente) ---
+// --- Alternar favorito (adiciona ou remove) ---
 export const toggleFavorito = async (req, res) => {
   const id_usuario = req.user.sub;
   const { id_fichamento } = req.params;

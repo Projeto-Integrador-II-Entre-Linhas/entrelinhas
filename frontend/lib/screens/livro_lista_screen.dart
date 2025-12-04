@@ -149,7 +149,7 @@ class _LivroListaScreenState extends State<LivroListaScreen> {
       backgroundColor: const Color(0xFFD2C9D4),
 
       appBar: AppBar(
-        backgroundColor: const Color(0xFF4F3466),
+        backgroundColor: const Color(0xFF6E4A8E),
         title: const Text('Livros', style: TextStyle(color: Colors.white, fontSize: 22)),
         centerTitle: true,
       ),
@@ -271,7 +271,6 @@ class _LivroListaScreenState extends State<LivroListaScreen> {
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(14),
 
-                                /// 🔥 Zoom suave aplicado aqui
                                 child: MouseRegion(
                                   onEnter: (_) => setState(() => livro["hover"] = true),
                                   onExit: (_) => setState(() => livro["hover"] = false),

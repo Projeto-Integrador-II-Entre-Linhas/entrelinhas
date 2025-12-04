@@ -292,7 +292,7 @@ class _LivroDetalhesScreenState extends State<LivroDetalhesScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFD2C9D4),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF4F3466),
+        backgroundColor: const Color(0xFF6E4A8E),
         elevation: 0,
         centerTitle: true,
         title: const Text(

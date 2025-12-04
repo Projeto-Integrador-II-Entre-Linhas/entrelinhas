@@ -91,7 +91,7 @@ class _SolicitacaoFormScreenState extends State<SolicitacaoFormScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Solicitar cadastro de livro'),
-        backgroundColor: const Color(0xFF4F3466),
+        backgroundColor: const Color(0xFF6E4A8E),
         foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(

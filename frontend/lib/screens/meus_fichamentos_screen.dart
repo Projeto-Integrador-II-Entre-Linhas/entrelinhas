@@ -72,7 +72,7 @@ class _MeusFichamentosScreenState extends State<MeusFichamentosScreen> {
 
       appBar: AppBar(
         title: const Text("Meus Fichamentos"),
-        backgroundColor: const Color(0xFF4F3466),
+        backgroundColor: const Color(0xFF6E4A8E),
       ),
 
       body: loading

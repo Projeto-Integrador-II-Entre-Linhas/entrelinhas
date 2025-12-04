@@ -78,7 +78,6 @@ class ApiService {
     });
   }
 
-  // Multipart BASE
   Future<http.StreamedResponse> putMultipart(
     String endpoint,
     Map<String, String> fields, {

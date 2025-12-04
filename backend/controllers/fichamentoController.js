@@ -38,7 +38,7 @@ export const upsertFichamento = async (req, res) => {
     let rows;
 
     if (id_fichamento) {
-      // RN06 – só o dono edita
+      // RN06 – apenas o doono do fichamento pode editá-lo
       const owner = await pool.query(
         'SELECT 1 FROM fichamentos WHERE id_fichamento=$1 AND id_usuario=$2',
         [id_fichamento, id_usuario]
@@ -74,7 +74,7 @@ export const upsertFichamento = async (req, res) => {
 
     const fichamentoId = rows[0].id_fichamento;
 
-    // --- Vincular gêneros, se enviados ---
+    // --- Vincular gêneros ---
     if (generos && Array.isArray(generos) && generos.length > 0) {
       const { rows: generosRows } = await pool.query(
         `SELECT id_genero FROM generos WHERE nome = ANY($1)`,
@@ -116,7 +116,7 @@ export const getMyFichamentos = async (req, res) => {
   }
 };
 
-// --- obter meu fichamento por livro ---
+// --- obter "meu" fichamento por livro ---
 export const getMeuPorLivro = async (req, res) => {
   const id_usuario = req.user.sub;
   const { idLivro } = req.params;

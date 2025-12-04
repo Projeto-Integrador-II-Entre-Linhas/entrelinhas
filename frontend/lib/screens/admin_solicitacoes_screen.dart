@@ -72,7 +72,7 @@ class _AdminSolicitacoesScreenState extends State<AdminSolicitacoesScreen> {
       backgroundColor: const Color(0xFFD2C9D4),
       appBar: AppBar(
         title: const Text('Admin • Solicitações'),
-        backgroundColor: const Color(0xFF4F3466),
+        backgroundColor: const Color(0xFF6E4A8E),
       ),
       body: loading
           ? const Center(child: CircularProgressIndicator(color: Color(0xFF4F3466)))

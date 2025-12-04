@@ -119,8 +119,7 @@ export const rejeitarSolicitacao = async (req, res) => {
     if (!solicit.rows.length) {
       return res.status(404).json({ error: 'Solicitação não encontrada' });
     }
-
-    // Livro associado volta a "INATIVO" ou permanece PENDENTE, conforme necessidade
+    
     await pool.query('UPDATE livros SET status=$1 WHERE id_livro=$2', ['INATIVO', solicit.rows[0].id_livro]);
 
     res.json({ success: true, message: 'Solicitação rejeitada', solicitacao: solicit.rows[0] });

@@ -38,6 +38,7 @@ export const getLivros = async (req, res) => {
     sql += ` AND (l.titulo ILIKE $${params.length} OR l.autor ILIKE $${params.length})`;
   }
 
+  // filtro gênero
   if (genero) {
     const generosArray = genero.split(",").map(g => g.trim());
     const placeholders = generosArray.map((_, i) => `$${params.length + i + 1}`).join(",");
@@ -57,7 +58,7 @@ export const getLivros = async (req, res) => {
   }
 };
 
-//  RF12 — Detalhes do livro + fichamentos públicos
+//  RF12 — Detalhes do livro + fichamentos públicos associados ao livro
 export const getLivroDetalhes = async (req, res) => {
   const { id } = req.params;
   try {
