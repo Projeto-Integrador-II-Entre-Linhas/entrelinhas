@@ -30071,7 +30071,7 @@ if(o==null){o=A.b([],s)
 n.m(0,p,o)
 p=o}else p=o
 J.f7(p,q)}return n},
-aX0(){return"http://192.168.100.12:3000"},
+aX0(){return"http://172.16.41.76:3000"},
 aXY(a){return B.h7},
 aFW(a,b,c,d,e){return A.b73(a,b,c,d,e,e)},
 b73(a,b,c,d,e,f){var s=0,r=A.A(f),q,p
@@ -47827,7 +47827,7 @@ c=f.e
 s=c==null?e:J.a3(c,"user")
 c=s==null?e:J.a3(s,"avatar")
 r=A.bZ(c==null?"":c)
-q=r.length!==0?"192.168.100.12:3000"+r:e
+q=r.length!==0?"172.16.41.76:3000"+r:e
 c=A.ew(B.NY,B.U,B.iG,B.Q)
 p=q==null
 o=!p?new A.mJ(q,1,e,B.jz):e
@@ -48839,7 +48839,7 @@ r=l.x
 q=r==null
 if(!q)r=new A.oj(r)
 else{r=l.y
-r=r!=null?new A.mJ("192.168.100.12:3000"+r,1,k,B.jz):k}s=A.hY(k,A.a68(s,r,q&&l.y==null?B.Lh:k,60),B.r,!1,k,k,k,k,k,k,k,k,k,k,k,k,k,l.gama(),k,k,k,k,k,k)
+r=r!=null?new A.mJ("172.16.41.76:3000"+r,1,k,B.jz):k}s=A.hY(k,A.a68(s,r,q&&l.y==null?B.Lh:k,60),B.r,!1,k,k,k,k,k,k,k,k,k,k,k,k,k,l.gama(),k,k,k,k,k,k)
 r=l.BK(l.d,"Nome completo")
 p=l.BK(l.e,"Nome de usu\xe1rio")
 o=l.BK(l.f,"E-mail")

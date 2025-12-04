@@ -5,6 +5,7 @@ import '../services/api_service.dart';
 import '../services/livro_service.dart';
 import 'fichamento_screen.dart';
 import 'fichamentos_livro_screen.dart';
+import '../services/fichamento_service.dart';
 
 class LivroDetalhesScreen extends StatefulWidget {
   final Map livro;
@@ -90,8 +91,44 @@ class _LivroDetalhesScreenState extends State<LivroDetalhesScreen> {
                 const SizedBox(height: 24),
                 _modalButton(
                   label: 'Criar Novo Fichamento',
-                  onPressed: () {
+                  onPressed: () async {
                     Navigator.pop(context);
+
+                    final existente = await FichamentoService().meuPorLivro(idLivro);
+
+                    if (existente != null) {
+                      showDialog(
+                        context: context,
+                        builder: (_) => AlertDialog(
+                          title: const Text("Fichamento já existe"),
+                          content: const Text(
+                            "Você já criou um fichamento para este livro.\n"
+                            "Deseja editar o fichamento existente?"
+                          ),
+                          actions: [
+                            TextButton(
+                              child: const Text("Cancelar"),
+                              onPressed: () => Navigator.pop(context),
+                            ),
+                            ElevatedButton(
+                              child: const Text("Editar"),
+                              onPressed: () {
+                                Navigator.pop(context);
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => FichamentoScreen(
+                                      fichamentoExistente: existente,
+                                    ),
+                                  ),
+                                ).then((_) => _carregarDetalhes());
+                              },
+                            ),
+                          ],
+                        ),
+                      );
+                      return;
+                    }
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -100,6 +137,7 @@ class _LivroDetalhesScreenState extends State<LivroDetalhesScreen> {
                     ).then((_) => _carregarDetalhes());
                   },
                 ),
+
                 const SizedBox(height: 12),
                 _modalButton(
                   label: 'Ver Fichamentos Relacionados',

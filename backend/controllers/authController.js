@@ -144,7 +144,7 @@ export const forgotPassword = async (req, res) => {
     const transporter = await getTransport();
 
     const appRedirectLink = `entrelinhas://app/reset-password/${token}`;
-    const backendLink = `http://192.168.100.12:3000/open/reset/${token}`;
+    const backendLink = `http://172.16.41.76:3000/open/reset/${token}`;
 
     await transporter.sendMail({
       from: process.env.EMAIL_USER || 'no-reply@entrelinhas.dev',
